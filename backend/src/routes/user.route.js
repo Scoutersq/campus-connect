@@ -4,6 +4,7 @@ const { userModel } = require("../models/user.model.js")
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+
 userRouter.post("/signup",async(req,res)=>{
     const firstName = req.body.firstName;
     const lastName = req.body.lastName;
@@ -54,7 +55,8 @@ userRouter.post("/signin",async(req,res)=>{
 
     if(user && passwordMatch){
         const token = jwt.sign({
-            id:user._id
+            id:user._id,
+            role:"user"
         },process.env.JWT_USER_SECRET)
 
         res.cookie("token",token)

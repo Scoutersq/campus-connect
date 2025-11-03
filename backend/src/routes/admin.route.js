@@ -4,66 +4,59 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const adminRouter = Router();
 
-adminRouter.post("/signup",async(req,res)=>{
-    const firstName = req.body.firstName;
-    const lastName = req.body.lastName;
-    const email = req.body.email;
-    const password = req.body.password;
+adminRouter.post("/signup", async (req, res) => {
+  const { firstName, lastName, email, password } = req.body;
 
-    const hashedPassword = await bcrypt.hash(password,5);
+  try {
+    const hashedPassword = await bcrypt.hash(password, 5);
 
-    try{
     await adminModel.create({
-        firstName:firstName,
-        lastName:lastName,
-        email:email,
-        password:hashedPassword
-    })
-    res.status(200).json({
-        message:"Signup successfull"
-    })
-}catch(e){
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    });
+
+    res.status(200).json({ message: "Signup successful" });
+  } catch (e) {
     res.status(400).json({
-        message:"Signup failed",
-        error:e.message
-    })
-}
-})
+      message: "Signup failed",
+      error: e.message,
+    });
+  }
+});
 
-adminRouter.post("/signin",async(req,res)=>{
-    const email = req.body.email;
-    const password = req.body.password;
+adminRouter.post("/signin", async (req, res) => {
+  const { email, password } = req.body;
 
-    const user = await adminModel.findOne({
-        email:email
-    })
+  const user = await adminModel.findOne({ email });
 
-    if(!user){
-        res.status(403).json({
-            message:"Invalid Credentials"
-        })
-    }
+  if (!user) {
+    return res.status(403).json({ message: "Invalid credentials" });
+  }
 
-    const passwordMatch = await bcrypt.compare(password,user.password);
+  const passwordMatch = await bcrypt.compare(password, user.password);
 
-    if(!passwordMatch){
-        res.status(403).json({
-            message:"Invalid Credentials"
-        })
-    }
+  if (!passwordMatch) {
+    return res.status(403).json({ message: "Invalid credentials" });
+  }
 
-    if(user && passwordMatch){
-        const token = jwt.sign({
-            id:user._id
-        },process.env.JWT_ADMIN_SECRET)
+  const token = jwt.sign(
+    { id: user._id, role: "admin" }, 
+    process.env.JWT_ADMIN_SECRET,   
+    { expiresIn: "7d" }
+  );
 
-        res.cookie("token",token)
-    }
-    res.status(200).json({
-        message:"Sign in successful"
-    })
-})
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json({ message: "Signed in successfully" });
+});
+
 
 module.exports = {
-    adminRouter:adminRouter
-}
+  adminRouter,
+};

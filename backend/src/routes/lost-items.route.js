@@ -1,8 +1,10 @@
 const { Router } = require("express");
 const { lostModel } = require("../models/lost.model.js")
 const lostRouter = Router();
+const { userMiddleware } = require("../middlewares/user.middleware.js");
+const { adminMiddleware } = require("../middlewares/admin.middleware.js");
 
-lostRouter.post("/report", async (req, res) => {
+lostRouter.post("/report", userMiddleware,async (req, res) => {
   try {
     const { title, description, location, contact, image, dateLost } = req.body;
 
@@ -34,7 +36,14 @@ lostRouter.post("/report", async (req, res) => {
   }
 });
 
-lostRouter.get("/preview",async(req,res)=>{
+lostRouter.get("/all",userMiddleware,async(req,res)=>{
+    const lostItems = await lostModel.find({});
+    res.json({
+        lostItems
+    })
+});
+
+lostRouter.get("/preview",adminMiddleware,async(req,res)=>{
     const lostItems = await lostModel.find({});
     res.json({
         lostItems
