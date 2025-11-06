@@ -1,38 +1,39 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const mongoose = require("mongoose");
 
-const eventsSchema = new Schema({
-    title:{
-        type:String,
-        required:true,
-        trim:true,
-        minlength:3
+const eventSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, "Event title is required"],
+      trim: true,
+      minlength: [3, "Title must be at least 3 characters long"],
     },
-    description:{
-        type:String,
-        required:true,
-        trim:true,
-        minlength:5
+    description: {
+      type: String,
+      required: [true, "Description is required"],
+      trim: true,
+      minlength: [5, "Description must be at least 5 characters long"],
     },
-    venue:{
-        type:String,
-        required:true,
-        trim:true
+    venue: {
+      type: String,
+      required: [true, "Venue is required"],
+      trim: true,
     },
-    date:{
-        type:Date,
-        required:true
+    date: {
+      type: Date,
+      required: [true, "Date is required"],
     },
-    createdBy:{
-        type:mongoose.Schema.Types.ObjectId,
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin", // makes it easy to populate admin info later
+      required: true,
     },
-    createdAt:{
-        type:Date,
-        default:Date.now
-    }
-})
+  },
+  {
+    timestamps: { createdAt: true, updatedAt: false },
+  }
+);
 
-const eventModel = mongoose.model("events",eventsSchema);
-module.exports = {
-    eventModel:eventModel
-}
+const eventModel = mongoose.model("event", eventSchema);
+
+module.exports = { eventModel };
