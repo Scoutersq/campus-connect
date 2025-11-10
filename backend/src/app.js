@@ -6,6 +6,7 @@ const { adminRouter } = require("../src/routes/auth/admin.route.js")
 const { notificationRouter } = require("./routes/notification.route.js");
 const { eventRouter } = require("../src/routes/events.routes.js");
 const { noteSharingRouter } = require("../src/routes/notesSharing.route.js");
+const { discussionRouter } = require("../src/routes/discussion.route.js");
 const app = express();
 const dotenv = require("dotenv")
 const cookieParser = require("cookie-parser");
@@ -20,6 +21,7 @@ app.use("/lost",lostRouter);
 app.use("/found",foundRouter);
 app.use("/notification",notificationRouter);
 app.use("/events",eventRouter);
-app.use("/notes",noteSharingRouter)
+app.use("/notes",noteSharingRouter);
+app.use("/post",discussionRouter);
 
 module.exports = app;
