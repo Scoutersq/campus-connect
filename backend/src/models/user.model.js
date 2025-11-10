@@ -4,7 +4,11 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema({
     email:{
         type:String,
-        required:true
+        required:true,
+        unique:true,
+        trim:true,
+        lowercase:true,
+        match:/^[\w-.]+@[\w-]+\.[\w-.]+$/
     },
     password:{
         type:String,
@@ -26,6 +30,11 @@ const userSchema = new Schema({
         maxlength:10,
         trim:true
     },
+    avatarUrl: {
+        type: String,
+        trim: true,
+        maxlength: 2048
+    }
 })
 
 

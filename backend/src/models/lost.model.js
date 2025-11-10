@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 const lostSchema = new Schema({
     title:{
         type:String,
-        requied:true,
+        required:true,
         trim:true
     },
     description:{
@@ -15,14 +15,17 @@ const lostSchema = new Schema({
     location:{
         type:String,
         required:true,
+        trim:true
     },
     contact:{
         type:String,
         required:true,
+        trim:true
     },
     image:{
         type:String,
-        default:""
+        default:"",
+        trim:true
     },
     dateLost:{
         type:Date,

@@ -18,6 +18,7 @@ const notificationSchema = new Schema({
     createdBy:{
         type:mongoose.Schema.Types.ObjectId,
         required:true,
+        ref:"Admin"
     },
     targetAudience:{
         type:String,

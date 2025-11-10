@@ -24,7 +24,8 @@ const foundSchema = new Schema({
     },
     image:{
         type:String,
-        required:true
+        default:"",
+        trim:true
     },
     dateFound:{
         type:Date,

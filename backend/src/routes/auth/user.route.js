@@ -1,78 +1,97 @@
 const { Router } = require("express");
-const userRouter = Router();
-const { userModel } = require("../../models/user.model.js")
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { z } = require("zod");
+const { userModel } = require("../../models/user.model.js");
+const { validateBody } = require("../../utils/validation.js");
 
+const userRouter = Router();
 
-userRouter.post("/signup",async(req,res)=>{
-    const firstName = req.body.firstName;
-    const lastName = req.body.lastName;
-    const email = req.body.email;
-    const password = req.body.password;
+const signupSchema = z.object({
+    firstName: z.string().trim().min(3).max(20),
+    lastName: z.string().trim().min(2).max(10),
+    email: z.string().trim().email().toLowerCase(),
+    password: z.string().min(6).max(80),
+});
 
-    const hashedPassword = await bcrypt.hash(password,10);
+const signinSchema = z.object({
+    email: z.string().trim().email().toLowerCase(),
+    password: z.string().min(6).max(80),
+});
 
-    try{
-    await userModel.create({
-        firstName:firstName,
-        lastName:lastName,
-        email:email,
-        password:hashedPassword
-    });
-    res.status(200).json({
-        message:"Sign up successful"
-    })
-}catch(e){
-    res.status(400).json({
-        message:"Signup failed",
-        error:e.message
-    });
-}
-})
+userRouter.post("/signup", validateBody(signupSchema), async (req, res) => {
+    try {
+        const existingUser = await userModel.findOne({ email: req.body.email });
 
-userRouter.post("/signin",async(req,res)=>{
-    const email = req.body.email;
-    const password = req.body.password;
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: "An account with this email already exists.",
+            });
+        }
 
-    try{
-    const user = await userModel.findOne({
-        email:email
-    })
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-    if(!user){
-        res.status(403).json({
-            message:"Invalid Credentials"
-        })
+        await userModel.create({
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
+            password: hashedPassword,
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Sign up successful.",
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Signup failed.",
+            error: error.message,
+        });
     }
+});
 
-    const passwordMatch = await bcrypt.compare(password,user.password);
-    if(!passwordMatch){
-        res.status(403).json({
-            message:"Invalid Credentials"
-        })
+userRouter.post("/signin", validateBody(signinSchema), async (req, res) => {
+    try {
+        const user = await userModel.findOne({ email: req.body.email });
+
+        if (!user) {
+            return res.status(403).json({ success: false, message: "Invalid credentials." });
+        }
+
+        const passwordMatch = await bcrypt.compare(req.body.password, user.password);
+
+        if (!passwordMatch) {
+            return res.status(403).json({ success: false, message: "Invalid credentials." });
+        }
+
+        const token = jwt.sign(
+            {
+                id: user._id,
+                role: "user",
+            },
+            process.env.JWT_USER_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return res.status(200).json({ success: true, message: "Signed in successfully." });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error.",
+            error: error.message,
+        });
     }
-
-    if(user && passwordMatch){
-        const token = jwt.sign({
-            id:user._id,
-            role:"user"
-        },process.env.JWT_USER_SECRET)
-
-        res.cookie("token",token)
-    }
-    res.status(200).json({
-        message:"Signed In successful"
-    })
-}catch(e){
-    res.status(500).json({
-        message:"Internal Server error",
-        error:e.message
-    })
-}
-    
-})
+});
 
 module.exports = {
-    userRouter:userRouter
-}
+    userRouter,
+};
