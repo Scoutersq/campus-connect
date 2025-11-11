@@ -2,14 +2,16 @@ const express = require('express');
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { userRouter } = require("./services/auth/user.route.js");
+const { adminRouter } = require("./services/auth/admin.route.js");
+const { authRouter } = require("./services/auth/auth.route.js");
+const { profileRouter } = require("./services/profile/profile.route.js");
+const { usersRouter } = require("./services/users/users.route.js");
 const { lostRouter } = require("./services/lost/lost-items.route.js");
 const { foundRouter } = require("./services/found/found-items.route.js");
-const { adminRouter } = require("./services/auth/admin.route.js");
 const { notificationRouter } = require("./services/notifications/notification.route.js");
 const { eventRouter } = require("./services/events/events.route.js");
 const { noteSharingRouter } = require("./services/notes/notesSharing.route.js");
 const { discussionRouter } = require("./services/discussion/discussion.route.js");
-const { profileRouter } = require("./services/profile/profile.route.js");
 const app = express();
 const dotenv = require("dotenv")
 const cookieParser = require("cookie-parser");
@@ -29,15 +31,17 @@ const apiLimiter = rateLimit({
 
 app.use(apiLimiter);
 
-app.use("/admin",adminRouter);
-app.use("/user",userRouter);
-app.use("/lost",lostRouter);
-app.use("/found",foundRouter);
-app.use("/notification",notificationRouter);
-app.use("/events",eventRouter);
-app.use("/notes",noteSharingRouter);
-app.use("/post",discussionRouter);
-app.use("/profile", profileRouter);
+app.use("/api/auth/admin", adminRouter);
+app.use("/api/auth/user", userRouter);
+app.use("/api/profile", profileRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/lost",lostRouter);
+app.use("/api/found",foundRouter);
+app.use("/api/notification",notificationRouter);
+app.use("/api/events",eventRouter);
+app.use("/api/notes",noteSharingRouter);
+app.use("/api/post",discussionRouter);
 
 app.use((err, req, res, next) => {
 	console.error(err);
