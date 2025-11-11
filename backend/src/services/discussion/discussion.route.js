@@ -1,13 +1,13 @@
 const { Router } = require("express");
 const mongoose = require("mongoose");
 const { z } = require("zod");
-const { postModelSchema } = require("../models/discussion.model.js");
-const { userMiddleware } = require("../middlewares/user.middleware.js");
+const { postModelSchema } = require("../../models/discussion.model.js");
+const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const {
   validateBody,
   validateQuery,
   validateParams,
-} = require("../utils/validation.js");
+} = require("../../utils/validation.js");
 
 const discussionRouter = Router();
 

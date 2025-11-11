@@ -1,45 +1,48 @@
 const { Router } = require("express");
-const { adminModel } = require("../../models/admin.model.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
+const { userModel } = require("../../models/user.model.js");
 const { validateBody } = require("../../utils/validation.js");
 
-const adminRouter = Router();
+const userRouter = Router();
 
-const adminSignupSchema = z.object({
+const signupSchema = z.object({
   firstName: z.string().trim().min(3).max(20),
   lastName: z.string().trim().min(2).max(10),
   email: z.string().trim().email().toLowerCase(),
-  password: z.string().min(8).max(80),
+  password: z.string().min(6).max(80),
 });
 
-const adminSigninSchema = z.object({
+const signinSchema = z.object({
   email: z.string().trim().email().toLowerCase(),
-  password: z.string().min(8).max(80),
+  password: z.string().min(6).max(80),
 });
 
-adminRouter.post("/signup", validateBody(adminSignupSchema), async (req, res) => {
+userRouter.post("/signup", validateBody(signupSchema), async (req, res) => {
   try {
-    const existingAdmin = await adminModel.findOne({ email: req.body.email });
+    const existingUser = await userModel.findOne({ email: req.body.email });
 
-    if (existingAdmin) {
+    if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: "An admin with this email already exists.",
+        message: "An account with this email already exists.",
       });
     }
 
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-    await adminModel.create({
+    await userModel.create({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,
       password: hashedPassword,
     });
 
-    return res.status(201).json({ success: true, message: "Signup successful." });
+    return res.status(201).json({
+      success: true,
+      message: "Sign up successful.",
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -49,9 +52,9 @@ adminRouter.post("/signup", validateBody(adminSignupSchema), async (req, res) =>
   }
 });
 
-adminRouter.post("/signin", validateBody(adminSigninSchema), async (req, res) => {
+userRouter.post("/signin", validateBody(signinSchema), async (req, res) => {
   try {
-    const user = await adminModel.findOne({ email: req.body.email });
+    const user = await userModel.findOne({ email: req.body.email });
 
     if (!user) {
       return res.status(403).json({ success: false, message: "Invalid credentials." });
@@ -64,8 +67,11 @@ adminRouter.post("/signin", validateBody(adminSigninSchema), async (req, res) =>
     }
 
     const token = jwt.sign(
-      { id: user._id, role: "admin" },
-      process.env.JWT_ADMIN_SECRET,
+      {
+        id: user._id,
+        role: "user",
+      },
+      process.env.JWT_USER_SECRET,
       { expiresIn: "7d" }
     );
 
@@ -86,7 +92,6 @@ adminRouter.post("/signin", validateBody(adminSigninSchema), async (req, res) =>
   }
 });
 
-
 module.exports = {
-  adminRouter,
+  userRouter,
 };

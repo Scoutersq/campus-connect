@@ -1,9 +1,9 @@
 const { Router } = require("express");
 const { z } = require("zod");
 const noteSharingRouter = Router();
-const { noteSharingModel } = require("../models/notesSharing.model.js");
-const { userMiddleware } = require("../middlewares/user.middleware.js");
-const { validateBody } = require("../utils/validation.js");
+const { noteSharingModel } = require("../../models/notesSharing.model.js");
+const { userMiddleware } = require("../../middlewares/user.middleware.js");
+const { validateBody } = require("../../utils/validation.js");
 
 const uploadSchema = z.object({
   title: z.string().trim().min(3).max(120),

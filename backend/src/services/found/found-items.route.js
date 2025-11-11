@@ -1,9 +1,9 @@
 const { Router } = require("express");
 const { z } = require("zod");
 const foundRouter = Router();
-const { foundModel } = require("../models/found.model.js");
-const { userMiddleware } = require("../middlewares/user.middleware.js");
-const { validateBody } = require("../utils/validation.js");
+const { foundModel } = require("../../models/found.model.js");
+const { userMiddleware } = require("../../middlewares/user.middleware.js");
+const { validateBody } = require("../../utils/validation.js");
 
 const foundReportSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -58,5 +58,5 @@ foundRouter.get("/preview", async (req, res) => {
 });
 
 module.exports = {
-    foundRouter:foundRouter
-}
+  foundRouter,
+};

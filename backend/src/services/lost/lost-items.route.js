@@ -1,10 +1,10 @@
 const { Router } = require("express");
 const { z } = require("zod");
-const { lostModel } = require("../models/lost.model.js");
+const { lostModel } = require("../../models/lost.model.js");
 const lostRouter = Router();
-const { userMiddleware } = require("../middlewares/user.middleware.js");
-const { adminMiddleware } = require("../middlewares/admin.middleware.js");
-const { validateBody } = require("../utils/validation.js");
+const { userMiddleware } = require("../../middlewares/user.middleware.js");
+const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
+const { validateBody } = require("../../utils/validation.js");
 
 const lostReportSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -73,5 +73,5 @@ lostRouter.get("/preview", adminMiddleware, async (req, res) => {
 });
 
 module.exports = {
-    lostRouter:lostRouter
-}
+  lostRouter,
+};

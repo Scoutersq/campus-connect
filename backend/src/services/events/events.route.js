@@ -1,10 +1,10 @@
 const { Router } = require("express");
 const { z } = require("zod");
 const eventRouter = Router();
-const { eventModel } = require("../models/events.model.js");
-const { adminMiddleware } = require("../middlewares/admin.middleware.js");
-const { notificationModel } = require("../models/notifications.model.js");
-const { validateBody } = require("../utils/validation.js");
+const { eventModel } = require("../../models/events.model.js");
+const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
+const { notificationModel } = require("../../models/notifications.model.js");
+const { validateBody } = require("../../utils/validation.js");
 
 const createEventSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -55,7 +55,6 @@ eventRouter.post(
 
 eventRouter.get("/", async (req, res) => {
   try {
-    // Fetch events sorted by date (upcoming first)
     const events = await eventModel.find({}).sort({ date: 1 });
 
     if (!events || events.length === 0) {
@@ -76,6 +75,5 @@ eventRouter.get("/", async (req, res) => {
     });
   }
 });
-
 
 module.exports = { eventRouter };

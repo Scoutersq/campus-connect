@@ -1,8 +1,8 @@
 const { Router } = require("express");
 const { z } = require("zod");
-const { notificationModel } = require("../models/notifications.model.js");
-const { adminMiddleware } = require("../middlewares/admin.middleware.js");
-const { validateBody } = require("../utils/validation.js");
+const { notificationModel } = require("../../models/notifications.model.js");
+const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
+const { validateBody } = require("../../utils/validation.js");
 const notificationRouter = Router();
 
 const createNotificationSchema = z.object({
@@ -47,7 +47,8 @@ notificationRouter.post(
 
 notificationRouter.get("/", async (req, res) => {
   try {
-    const notifications = await notificationModel.find({})
+    const notifications = await notificationModel
+      .find({})
       .sort({ createdAt: -1 })
       .lean();
 
@@ -60,7 +61,7 @@ notificationRouter.get("/", async (req, res) => {
 
     res.status(200).json({
       success: true,
-    notifications,
+      notifications,
     });
   } catch (error) {
     res.status(500).json({
@@ -72,5 +73,5 @@ notificationRouter.get("/", async (req, res) => {
 });
 
 module.exports = {
-    notificationRouter:notificationRouter
-}
+  notificationRouter,
+};
