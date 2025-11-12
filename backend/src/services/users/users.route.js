@@ -19,7 +19,7 @@ usersRouter.get(
   "/:userId",
   validateParams(paramsSchema),
   async (req, res) => {
-    try {
+    try {0
       const profile = await userModel
         .findById(req.params.userId)
         .select("firstName lastName avatarUrl createdAt")

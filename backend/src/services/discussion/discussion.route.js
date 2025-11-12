@@ -9,7 +9,8 @@ const {
   validateParams,
 } = require("../../utils/validation.js");
 
-const discussionRouter = Router();
+const postsRouter = Router();
+const commentsRouter = Router();
 
 const objectIdSchema = z
   .string()
@@ -28,6 +29,19 @@ const createPostSchema = z.object({
     .default([]),
 });
 
+const updatePostSchema = z
+  .object({
+    title: z.string().trim().min(3).max(120).optional(),
+    content: z.string().trim().min(1).optional(),
+    tags: z
+      .array(z.string().trim().min(1).max(50))
+      .max(10)
+      .optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided to update the post.",
+  });
+
 const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(10),
@@ -40,7 +54,7 @@ const commentBodySchema = z.object({
   text: z.string().trim().min(1).max(500),
 });
 
-discussionRouter.post(
+postsRouter.post(
   "/create",
   userMiddleware,
   validateBody(createPostSchema),
@@ -79,7 +93,98 @@ discussionRouter.post(
   }
 );
 
-discussionRouter.get(
+postsRouter.put(
+  "/:postId",
+  userMiddleware,
+  validateParams(z.object({ postId: objectIdSchema })),
+  validateBody(updatePostSchema),
+  async (req, res) => {
+    try {
+      const fieldsToUpdate = {};
+
+      if (req.body.title !== undefined) {
+        fieldsToUpdate.title = req.body.title;
+      }
+
+      if (req.body.content !== undefined) {
+        fieldsToUpdate.content = req.body.content;
+      }
+
+      if (req.body.tags !== undefined) {
+        fieldsToUpdate.tags = Array.from(new Set(req.body.tags));
+      }
+
+      fieldsToUpdate.updatedAt = new Date();
+
+      const updated = await postModelSchema
+        .findOneAndUpdate(
+          { _id: req.params.postId, author: req.userID, isDeleted: false },
+          { $set: fieldsToUpdate },
+          { new: true }
+        )
+        .populate("author", "firstName lastName email avatarUrl")
+        .lean();
+
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: "Post not found or you are not authorized to update it.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Post updated successfully.",
+        post: {
+          ...updated,
+          likesCount: updated.likes?.length || 0,
+          commentsCount: updated.comments?.length || 0,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update post.",
+        error: error.message,
+      });
+    }
+  }
+);
+
+postsRouter.delete(
+  "/:postId",
+  userMiddleware,
+  validateParams(z.object({ postId: objectIdSchema })),
+  async (req, res) => {
+    try {
+      const deleted = await postModelSchema.findOneAndUpdate(
+        { _id: req.params.postId, author: req.userID, isDeleted: false },
+        { $set: { isDeleted: true, updatedAt: new Date() } },
+        { new: true }
+      );
+
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: "Post not found or you are not authorized to delete it.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Post deleted successfully.",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete post.",
+        error: error.message,
+      });
+    }
+  }
+);
+
+postsRouter.get(
   "/",
   validateQuery(listQuerySchema),
   async (req, res) => {
@@ -142,13 +247,84 @@ discussionRouter.get(
   }
 );
 
-discussionRouter.get(
-  "/:id",
-  validateParams(z.object({ id: objectIdSchema })),
+postsRouter.get(
+  "/:postId/likes",
+  validateParams(z.object({ postId: objectIdSchema })),
   async (req, res) => {
     try {
       const post = await postModelSchema
-        .findOne({ _id: req.params.id, isDeleted: false })
+        .findOne({ _id: req.params.postId, isDeleted: false })
+        .populate("likes", "firstName lastName email avatarUrl")
+        .select("likes")
+        .lean();
+
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: "Post not found.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        likesCount: post.likes?.length || 0,
+        likes: post.likes || [],
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch likes.",
+        error: error.message,
+      });
+    }
+  }
+);
+
+postsRouter.get(
+  "/:postId/comments",
+  validateParams(z.object({ postId: objectIdSchema })),
+  async (req, res) => {
+    try {
+      const post = await postModelSchema
+        .findOne({ _id: req.params.postId, isDeleted: false })
+        .populate("comments.user", "firstName lastName email avatarUrl")
+        .select("comments")
+        .lean();
+
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: "Post not found.",
+        });
+      }
+
+      const comments = (post.comments || []).map((comment) => ({
+        ...comment,
+        likesCount: comment.likes?.length || 0,
+      }));
+
+      return res.status(200).json({
+        success: true,
+        commentsCount: comments.length,
+        comments,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch comments.",
+        error: error.message,
+      });
+    }
+  }
+);
+
+postsRouter.get(
+  "/:postId",
+  validateParams(z.object({ postId: objectIdSchema })),
+  async (req, res) => {
+    try {
+      const post = await postModelSchema
+        .findOne({ _id: req.params.postId, isDeleted: false })
         .populate("author", "firstName lastName email avatarUrl")
         .populate("comments.user", "firstName lastName email avatarUrl")
         .lean();
@@ -178,15 +354,15 @@ discussionRouter.get(
   }
 );
 
-discussionRouter.post(
-  "/:id/comments",
+postsRouter.post(
+  "/:postId/comments",
   userMiddleware,
-  validateParams(z.object({ id: objectIdSchema })),
+  validateParams(z.object({ postId: objectIdSchema })),
   validateBody(commentBodySchema),
   async (req, res) => {
     try {
       const post = await postModelSchema
-        .findOne({ _id: req.params.id, isDeleted: false })
+        .findOne({ _id: req.params.postId, isDeleted: false })
         .populate("comments.user", "firstName lastName email avatarUrl");
 
       if (!post) {
@@ -202,13 +378,14 @@ discussionRouter.post(
       await post.populate("comments.user", "firstName lastName email avatarUrl");
 
       const latestComment = post.comments[post.comments.length - 1];
+      const serialized = latestComment.toObject();
 
       return res.status(201).json({
         success: true,
         message: "Comment added successfully.",
         comment: {
-          ...latestComment.toObject(),
-          likesCount: latestComment.likes?.length || 0,
+          ...serialized,
+          likesCount: serialized.likes?.length || 0,
         },
         commentsCount: post.comments.length,
       });
@@ -222,14 +399,14 @@ discussionRouter.post(
   }
 );
 
-discussionRouter.post(
-  "/:id/like",
+postsRouter.post(
+  "/:postId/like",
   userMiddleware,
-  validateParams(z.object({ id: objectIdSchema })),
+  validateParams(z.object({ postId: objectIdSchema })),
   async (req, res) => {
     try {
       const post = await postModelSchema.findOne({
-        _id: req.params.id,
+        _id: req.params.postId,
         isDeleted: false,
       });
 
@@ -266,14 +443,16 @@ discussionRouter.post(
   }
 );
 
-discussionRouter.post(
-  "/:id/comments/:commentId/like",
+postsRouter.post(
+  "/:postId/comments/:commentId/like",
   userMiddleware,
-  validateParams(z.object({ id: objectIdSchema, commentId: objectIdSchema })),
+  validateParams(
+    z.object({ postId: objectIdSchema, commentId: objectIdSchema })
+  ),
   async (req, res) => {
     try {
       const post = await postModelSchema.findOne({
-        _id: req.params.id,
+        _id: req.params.postId,
         isDeleted: false,
         "comments._id": req.params.commentId,
       });
@@ -294,9 +473,10 @@ discussionRouter.post(
         });
       }
 
-      const alreadyLiked = comment.likes.some((userId) => userId.equals(req.userID));
+      const alreadyLiked = comment.likes.some((userId) =>
+        userId.equals(req.userID)
+      );
 
-      // Toggle like state for the comment while keeping ownership intact.
       if (alreadyLiked) {
         comment.likes.pull(req.userID);
       } else {
@@ -321,6 +501,63 @@ discussionRouter.post(
   }
 );
 
+commentsRouter.delete(
+  "/:commentId",
+  userMiddleware,
+  validateParams(z.object({ commentId: objectIdSchema })),
+  async (req, res) => {
+    try {
+      const post = await postModelSchema.findOne({
+        "comments._id": req.params.commentId,
+        isDeleted: false,
+      });
+
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found.",
+        });
+      }
+
+      const comment = post.comments.id(req.params.commentId);
+
+      if (!comment) {
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found.",
+        });
+      }
+
+      const isPostOwner = post.author.equals(req.userID);
+      const isCommentOwner = comment.user.equals(req.userID);
+
+      if (!isPostOwner && !isCommentOwner) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not allowed to delete this comment.",
+        });
+      }
+
+      comment.deleteOne();
+      post.updatedAt = new Date();
+      await post.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Comment deleted successfully.",
+        commentsCount: post.comments.length,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete comment.",
+        error: error.message,
+      });
+    }
+  }
+);
+
 module.exports = {
-  discussionRouter,
+  postsRouter,
+  commentsRouter,
 };
