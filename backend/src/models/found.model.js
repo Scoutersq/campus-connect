@@ -31,6 +31,11 @@ const foundSchema = new Schema({
         type:Date,
         required:true
     },
+    reportedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+    },
     createdAt: {
     type: Date,
     default: Date.now

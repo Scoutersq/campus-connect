@@ -30,6 +30,15 @@ const noteSharingSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    upvotedBy: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

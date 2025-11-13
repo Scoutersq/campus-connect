@@ -5,9 +5,15 @@ const formatError = (error) => {
     return { message: "Validation failed." };
   }
 
+  const issues = Array.isArray(error.errors)
+    ? error.errors
+    : Array.isArray(error.issues)
+      ? error.issues
+      : [];
+
   return {
     message: "Validation failed.",
-    errors: error.errors.map((issue) => ({
+    errors: issues.map((issue) => ({
       path: issue.path.join("."),
       message: issue.message,
     })),
