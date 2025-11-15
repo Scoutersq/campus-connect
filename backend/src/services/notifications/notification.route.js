@@ -2,7 +2,8 @@ const { Router } = require("express");
 const { z } = require("zod");
 const { notificationModel } = require("../../models/notifications.model.js");
 const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
-const { validateBody } = require("../../utils/validation.js");
+const { userMiddleware } = require("../../middlewares/user.middleware.js");
+const { validateBody, validateParams } = require("../../utils/validation.js");
 const notificationRouter = Router();
 
 const createNotificationSchema = z.object({
@@ -12,6 +13,13 @@ const createNotificationSchema = z.object({
   targetAudience: z.enum(["students", "faculty", "all"]).optional().default("all"),
   expiresAt: z.coerce.date().optional(),
   isImportant: z.boolean().optional().default(false),
+});
+
+const notificationIdParamsSchema = z.object({
+  notificationId: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid notification id."),
 });
 
 notificationRouter.post(
@@ -71,6 +79,40 @@ notificationRouter.get("/", async (req, res) => {
     });
   }
 });
+
+notificationRouter.post(
+  "/:notificationId/read",
+  userMiddleware,
+  validateParams(notificationIdParamsSchema),
+  async (req, res) => {
+    try {
+      const notification = await notificationModel.findById(req.params.notificationId);
+
+      if (!notification) {
+        return res.status(404).json({
+          success: false,
+          message: "Notification not found.",
+        });
+      }
+
+      await notificationModel.updateOne(
+        { _id: notification._id },
+        { $addToSet: { readBy: req.userID } }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Notification marked as read.",
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error.",
+      });
+    }
+  }
+);
 
 module.exports = {
   notificationRouter,

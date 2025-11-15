@@ -13,7 +13,7 @@ const notificationSchema = new Schema({
     },
     category:{
         type:String,
-        enum:["notices","events","update","holidays","others"],
+        enum:["notices","events","update","holidays","others","emergency"],
     },
     createdBy:{
         type:mongoose.Schema.Types.ObjectId,
@@ -35,7 +35,12 @@ const notificationSchema = new Schema({
   isImportant: {
     type: Boolean,
     default: false,
-  }
+    },
+    readBy: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "User",
+        default: [],
+    }
 });
 
 const notificationModel = mongoose.model("notifications",notificationSchema);

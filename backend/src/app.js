@@ -12,6 +12,7 @@ const { notificationRouter } = require("./services/notifications/notification.ro
 const { eventRouter } = require("./services/events/events.route.js");
 const { noteSharingRouter } = require("./services/notes/notesSharing.route.js");
 const { skillsExchangeRouter } = require("./services/skills/skills-exchange.route.js");
+const { emergencyRouter } = require("./services/emergency/emergency.route.js");
 const {
 	postsRouter,
 	commentsRouter,
@@ -46,6 +47,7 @@ app.use("/api/notification",notificationRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/notes", noteSharingRouter);
 app.use("/api/skills-exchange", skillsExchangeRouter);
+app.use("/api/emergency", emergencyRouter);
 app.use("/api/posts", postsRouter);
 app.use("/api/comments", commentsRouter);
 
