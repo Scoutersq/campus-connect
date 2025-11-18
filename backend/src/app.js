@@ -11,7 +11,9 @@ const { foundRouter } = require("./services/found/found-items.route.js");
 const { notificationRouter } = require("./services/notifications/notification.route.js");
 const { eventRouter } = require("./services/events/events.route.js");
 const { noteSharingRouter } = require("./services/notes/notesSharing.route.js");
-const { skillsExchangeRouter } = require("./services/skills/skills-exchange.route.js");
+const skillsExchangeRouter = require("./routes/skills/skillsExchange.routes.js");
+const mentorshipRouter = require("./routes/skills/mentorship.routes.js");
+const skillsDirectoryRouter = require("./routes/skills/skillsDirectory.routes.js");
 const { emergencyRouter } = require("./services/emergency/emergency.route.js");
 const {
 	postsRouter,
@@ -47,15 +49,23 @@ app.use("/api/notification",notificationRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/notes", noteSharingRouter);
 app.use("/api/skills-exchange", skillsExchangeRouter);
+app.use("/api/mentorship", mentorshipRouter);
+app.use("/api", skillsDirectoryRouter);
 app.use("/api/emergency", emergencyRouter);
 app.use("/api/posts", postsRouter);
 app.use("/api/comments", commentsRouter);
 
 app.use((err, req, res, next) => {
-	console.error(err);
-	res.status(500).json({
+	const statusCode = err.statusCode || err.status || 500;
+	const message = err.message || "Internal server error.";
+
+	if (statusCode >= 500) {
+		console.error(err);
+	}
+
+	res.status(statusCode).json({
 		success: false,
-		message: "Internal server error.",
+		message,
 	});
 });
 

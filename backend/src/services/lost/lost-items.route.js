@@ -16,6 +16,10 @@ const lostReportSchema = z.object({
   dateLost: z.coerce.date(),
 });
 
+const lostStatusUpdateSchema = z.object({
+  status: z.enum(["claimed", "returned"]),
+});
+
 const itemIdParamsSchema = z.object({
   itemId: z
     .string()
@@ -196,6 +200,60 @@ lostRouter.delete(
         success: false,
         message: "Internal server error.",
         error: error.message,
+      });
+    }
+  }
+);
+
+lostRouter.patch(
+  "/:itemId/status",
+  validateParams(itemIdParamsSchema),
+  authorizeReporterOrAdmin,
+  validateBody(lostStatusUpdateSchema),
+  async (req, res) => {
+    try {
+      const item = await lostModel.findById(req.params.itemId);
+
+      if (!item) {
+        return res.status(404).json({
+          success: false,
+          message: "Lost item not found.",
+        });
+      }
+
+      const isReporter =
+        req.role === "user" && item.reportedBy?.toString() === req.userID;
+      const isAdmin = req.role === "admin";
+
+      if (!isReporter && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to update this lost item.",
+        });
+      }
+
+      if (item.status === req.body.status) {
+        return res.status(200).json({
+          success: true,
+          message: `Status already marked as ${req.body.status}.`,
+          data: item,
+        });
+      }
+
+      item.status = req.body.status;
+      item.statusUpdatedAt = new Date();
+      await item.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Lost item status updated successfully.",
+        data: item,
+      });
+    } catch (error) {
+      console.error("Error updating lost item status:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error.",
       });
     }
   }

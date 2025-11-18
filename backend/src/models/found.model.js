@@ -36,6 +36,16 @@ const foundSchema = new Schema({
         ref: "User",
         required: true,
     },
+    status: {
+        type: String,
+        enum: ["reported", "claimed", "returned"],
+        default: "reported",
+        index: true,
+    },
+    statusUpdatedAt: {
+        type: Date,
+        default: Date.now,
+    },
     createdAt: {
     type: Date,
     default: Date.now
