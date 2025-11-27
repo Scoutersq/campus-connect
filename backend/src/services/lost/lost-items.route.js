@@ -123,10 +123,10 @@ lostRouter.get("/all", userMiddleware, async (req, res) => {
   }
 });
 
-lostRouter.get("/preview", adminMiddleware, async (req, res) => {
+lostRouter.get("/preview", async (req, res) => {
   try {
-    const lostItems = await lostModel.find({}).lean();
-    return res.status(200).json({ success: true, lostItems });
+    const preview = await lostModel.find({}).lean();
+    return res.status(200).json({ success: true, preview });
   } catch (error) {
     return res.status(500).json({
       success: false,

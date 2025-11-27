@@ -71,8 +71,8 @@ adminRouter.post("/signin", validateBody(adminSigninSchema), async (req, res) =>
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // set to true only in production with HTTPS
+      sameSite: "lax", // allows cross-port cookies for local dev
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
