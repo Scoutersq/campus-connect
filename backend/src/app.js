@@ -15,6 +15,7 @@ const skillsExchangeRouter = require("./routes/skills/skillsExchange.routes.js")
 const mentorshipRouter = require("./routes/skills/mentorship.routes.js");
 const skillsDirectoryRouter = require("./routes/skills/skillsDirectory.routes.js");
 const { emergencyRouter } = require("./services/emergency/emergency.route.js");
+const cors = require('cors');
 const {
 	postsRouter,
 	commentsRouter,
@@ -28,6 +29,10 @@ app.disable("x-powered-by");
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(helmet());
+app.use(cors({
+  origin: 'https://campus-connect-gold-tau.vercel.app/',
+   credentials: true
+}));
 
 const apiLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
