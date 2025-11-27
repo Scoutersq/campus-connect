@@ -1,4 +1,4 @@
-import { apiFetch } from "../api.js";
+import { apiFetch, fetchResource } from "../utils/fetchResource";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -107,41 +107,6 @@ export default function DashboardPage() {
         }
       }, []);
 
-      const fetchResource = React.useCallback(
-        async (url, fallback, options = {}) => {
-          try {
-            const response = await fetch(url, { credentials: "include", ...options });
-
-            if (!response.ok) {
-              if (response.status === 404) {
-                return { data: fallback, error: null };
-              }
-
-              let message = `Failed to fetch ${url}`;
-              try {
-                const errorBody = await response.json();
-                if (errorBody?.message) {
-                  message = errorBody.message;
-                }
-              } catch {
-                // Ignore JSON parse issues on error responses
-              }
-
-              return { data: fallback, error: message };
-            }
-
-            const parsed = await response.json();
-            return { data: parsed, error: null };
-          } catch (error) {
-            if (error.name === "AbortError") {
-              return { data: fallback, error: null };
-            }
-            return { data: fallback, error: error.message || `Failed to fetch ${url}` };
-          }
-        },
-        []
-      );
-
       useEffect(() => {
         const controller = new AbortController();
         let cancelled = false;
@@ -204,7 +169,7 @@ export default function DashboardPage() {
           cancelled = true;
           controller.abort();
         };
-      }, [fetchResource]);
+      }, []);
 
       const handleLogout = () => {
         localStorage.removeItem("cc_role");
@@ -715,55 +680,37 @@ function LostFoundSection({ role, pendingAction, onActionHandled = () => {}, onD
   const [error, setError] = React.useState("");
   const [refreshKey, setRefreshKey] = React.useState(0);
 
-  const parsePayload = React.useCallback(async (response) => {
-    if (response.status === 404) {
-      return { preview: [] };
-    }
-
-    let body = {};
-    try {
-      body = await response.json();
-    } catch {
-      body = {};
-    }
-
-    if (!response.ok) {
-      throw new Error(body?.message || "Failed to fetch lost & found data.");
-    }
-
-    return body;
-  }, []);
-
   const loadData = React.useCallback(
     async (signal) => {
       setLoading(true);
       setError("");
 
       try {
-        const [lostResponse, foundResponse] = await Promise.all([
-          fetch("/api/lost/preview", { credentials: "include", signal }),
-          fetch("/api/found/preview", { credentials: "include", signal }),
+        const [lostResult, foundResult] = await Promise.all([
+          fetchResource("/api/lost/preview", { preview: [] }, { signal }),
+          fetchResource("/api/found/preview", { preview: [] }, { signal }),
         ]);
 
-        const lostData = await parsePayload(lostResponse);
-        const foundData = await parsePayload(foundResponse);
-
-        const lostList = Array.isArray(lostData?.preview) ? lostData.preview : [];
-        const foundList = Array.isArray(foundData?.preview) ? foundData.preview : [];
+        const lostList = Array.isArray(lostResult.data?.preview) ? lostResult.data.preview : [];
+        const foundList = Array.isArray(foundResult.data?.preview) ? foundResult.data.preview : [];
 
         setLostItems(lostList);
         setFoundItems(foundList);
         onDataRefresh({ lost: lostList, found: foundList });
+
+        if (lostResult.error || foundResult.error) {
+          setError(lostResult.error || foundResult.error || "Unable to load lost and found items.");
+        }
       } catch (err) {
-        if (err.name === "AbortError") {
+        if (err?.name === "AbortError") {
           return;
         }
-        setError(err.message || "Unable to load lost and found items.");
+        setError(err?.message || "Unable to load lost and found items.");
       } finally {
         setLoading(false);
       }
     },
-    [onDataRefresh, parsePayload]
+    [onDataRefresh]
   );
 
   React.useEffect(() => {
@@ -1110,22 +1057,15 @@ function EventsSection({ role, onEventsUpdate = () => {}, onCreateEvent }) {
     setLoading(true);
     setBanner(null);
     try {
-      const response = await apiFetch("/api/events", { signal });
+      const result = await fetchResource("/api/events", { events: [] });
 
-      if (response.status === 404) {
-        setEvents([]);
-        setLoading(false);
-        return;
+      if (result.error) {
+        throw new Error(result.error || "Failed to load events.");
       }
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to load events.");
-      }
-
-      setEvents(Array.isArray(data.events) ? data.events : []);
+      setEvents(Array.isArray(result.data?.events) ? result.data.events : []);
     } catch (error) {
-      setBanner({ type: "error", message: error.message || "Failed to load events." });
+      setBanner({ type: "error", message: error?.message || "Failed to load events." });
     } finally {
       setLoading(false);
     }
@@ -1147,9 +1087,8 @@ function EventsSection({ role, onEventsUpdate = () => {}, onCreateEvent }) {
       setBanner(null);
 
       try {
-        const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        const response = await apiFetch(`/api/events/${eventId}/rsvp`, {
           method: action === "cancel" ? "DELETE" : "POST",
-          credentials: "include",
         });
 
         const data = await response.json();
@@ -1425,9 +1364,8 @@ function AnnouncementsSection({ role, announcements = [], meta, onAnnouncementsC
       setProcessingId(announcementId);
 
       try {
-        const response = await fetch(`/api/notifications/${announcementId}/read`, {
+        const response = await apiFetch(`/api/notifications/${announcementId}/read`, {
           method: "POST",
-          credentials: "include",
         });
         const data = await response.json();
 
@@ -1830,11 +1768,10 @@ function ReportItemForm({ onClose, onSuccess }) {
         // If image is empty or whitespace, do NOT include it in the payload
         endpoint = "/api/found/report";
       }
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to report item");

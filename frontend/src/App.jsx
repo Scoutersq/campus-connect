@@ -5,8 +5,6 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
-import dotenv from 'dotenv';
-dotenv.config();
 
 export default function App() {
   return (

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/fetchResource";
 
 const roles = [
   { label: "User", value: "user" },
@@ -28,11 +29,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const endpoint = role === "admin" ? "/api/auth/admin/signin" : "/api/auth/user/signin";
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
-        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");

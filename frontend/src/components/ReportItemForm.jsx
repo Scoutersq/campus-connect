@@ -1,5 +1,6 @@
 import React from "react";
 import toast from "react-hot-toast";
+import { apiFetch } from "../utils/fetchResource";
 
 export default function ReportItemForm({ onClose, onSuccess }) {
   const [category, setCategory] = React.useState("lost");
@@ -74,10 +75,9 @@ export default function ReportItemForm({ onClose, onSuccess }) {
         endpoint = "/api/found/report";
       }
 
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(payload),
       });
 
