@@ -1,4 +1,4 @@
-
+import { apiFetch } from "../api.js";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -1110,7 +1110,7 @@ function EventsSection({ role, onEventsUpdate = () => {}, onCreateEvent }) {
     setLoading(true);
     setBanner(null);
     try {
-      const response = await fetch("/api/events", { credentials: "include" });
+      const response = await apiFetch("/api/events", { signal });
 
       if (response.status === 404) {
         setEvents([]);
