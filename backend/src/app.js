@@ -46,6 +46,8 @@ app.use("/api/users", usersRouter);
 app.use("/api/lost",lostRouter);
 app.use("/api/found",foundRouter);
 app.use("/api/notification",notificationRouter);
+app.use("/api/notifications", notificationRouter);
+app.use("/api/announcements", notificationRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/notes", noteSharingRouter);
 app.use("/api/skills-exchange", skillsExchangeRouter);

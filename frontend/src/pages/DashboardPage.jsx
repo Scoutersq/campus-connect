@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   FiGrid,
   FiMapPin,
@@ -14,6 +15,10 @@ import {
   FiPlusCircle,
   FiAlertTriangle,
   FiSearch,
+  FiClock,
+  FiCheck,
+  FiTag,
+  FiPhone,
 } from "react-icons/fi";
 
 const SIDEBAR_SECTIONS = [
@@ -36,6 +41,48 @@ const SIDEBAR_SECTIONS = [
   },
 ];
 
+const EMERGENCY_CONTACTS = [
+  {
+    id: "security",
+    label: "Campus Security",
+    phone: "(555) 123-4567",
+    tel: "5551234567",
+    availability: "24/7",
+    description: "Immediate response for safety concerns and on-campus incidents.",
+  },
+  {
+    id: "medical",
+    label: "Medical Emergency",
+    phone: "(555) 123-4568",
+    tel: "5551234568",
+    availability: "24/7",
+    description: "Urgent medical assistance from campus health services.",
+  },
+  {
+    id: "counseling",
+    label: "Counseling Services",
+    phone: "(555) 123-4569",
+    tel: "5551234569",
+    availability: "Mon–Fri 9-5",
+    description: "Emotional support and crisis counseling for students.",
+  },
+];
+
+const SAFETY_RESOURCES = [
+  {
+    title: "Emergency Assembly Points",
+    description: "Locate the nearest assembly points and evacuation routes across campus.",
+  },
+  {
+    title: "Safety Guidelines",
+    description: "Review recommended steps to stay safe during severe weather or incidents.",
+  },
+  {
+    title: "Emergency Preparedness",
+    description: "Tips for building a personal safety kit and campus emergency contacts list.",
+  },
+];
+
 export default function DashboardPage() {
       const [role, setRole] = useState("user");
       const [active, setActive] = useState("home");
@@ -44,6 +91,7 @@ export default function DashboardPage() {
       const [foundSample, setFoundSample] = useState([]);
       const [eventList, setEventList] = useState([]);
       const [announcementList, setAnnouncementList] = useState([]);
+      const [announcementMeta, setAnnouncementMeta] = useState({ count: 0, unreadCount: 0 });
       const [alertList, setAlertList] = useState([]);
       const [dashboardLoading, setDashboardLoading] = useState(true);
       const [dashboardError, setDashboardError] = useState("");
@@ -116,7 +164,11 @@ export default function DashboardPage() {
           const eventsResult = await fetchResource("/api/events", { events: [] }, { signal: controller.signal });
           if (eventsResult.error) encounteredError = true;
 
-          const notificationsResult = await fetchResource("/api/notifications", { notifications: [] }, { signal: controller.signal });
+          const notificationsResult = await fetchResource(
+            "/api/notifications",
+            { notifications: [], count: 0, unreadCount: 0 },
+            { signal: controller.signal }
+          );
           if (notificationsResult.error) encounteredError = true;
 
           const alertsResult = await fetchResource("/api/emergency/active", { data: [] }, { signal: controller.signal });
@@ -130,7 +182,13 @@ export default function DashboardPage() {
           setLostSample(lostResult.data?.preview ?? []);
           setFoundSample(foundResult.data?.preview ?? []);
           setEventList(eventsResult.data?.events ?? []);
-          setAnnouncementList(notificationsResult.data?.notifications ?? []);
+          const announcementsPayload = notificationsResult.data ?? {};
+          const announcementsList = announcementsPayload.notifications ?? [];
+          setAnnouncementList(announcementsList);
+          setAnnouncementMeta({
+            count: announcementsPayload.count ?? announcementsList.length,
+            unreadCount: announcementsPayload.unreadCount ?? 0,
+          });
           setAlertList(alertsResult.data?.data ?? []);
 
           if (encounteredError) {
@@ -189,6 +247,19 @@ export default function DashboardPage() {
       const handleLostFoundData = React.useCallback(({ lost = [], found = [] }) => {
         setLostSample(lost);
         setFoundSample(found);
+      }, []);
+
+      const handleEventsSnapshot = React.useCallback((events = []) => {
+        setEventList(events);
+      }, []);
+
+      const handleAnnouncementsSync = React.useCallback(({ notifications, meta } = {}) => {
+        if (Array.isArray(notifications)) {
+          setAnnouncementList(notifications);
+        }
+        if (meta) {
+          setAnnouncementMeta((prev) => ({ ...prev, ...meta }));
+        }
       }, []);
 
       const sidebarSections = SIDEBAR_SECTIONS.map((section) => ({
@@ -272,6 +343,20 @@ export default function DashboardPage() {
                 loading={dashboardLoading}
                 error={dashboardError}
                 onQuickAction={handleQuickAction}
+              />
+            ) : active === "notifications" ? (
+              <AnnouncementsSection
+                role={role}
+                announcements={announcementList}
+                meta={announcementMeta}
+                onAnnouncementsChange={handleAnnouncementsSync}
+              />
+            ) : active === "events" ? (
+              <EventsSection role={role} onEventsUpdate={handleEventsSnapshot} />
+            ) : active === "emergency" ? (
+              <EmergencySection
+                alerts={alertList}
+                loading={dashboardLoading}
               />
             ) : (
               <SectionPlaceholder title={SECTION_TITLES[active] || "Dashboard"} />
@@ -1006,6 +1091,673 @@ function LostFoundSection({ role, pendingAction, onActionHandled = () => {}, onD
   );
 }
 
+function EventsSection({ role, onEventsUpdate = () => {}, onCreateEvent }) {
+  const [events, setEvents] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [processingId, setProcessingId] = React.useState(null);
+  const [banner, setBanner] = React.useState(null);
+  const [selectedEvent, setSelectedEvent] = React.useState(null);
+
+  const handleCreateClick = React.useCallback(() => {
+    if (typeof onCreateEvent === "function") {
+      onCreateEvent();
+    } else {
+      setBanner({ type: "success", message: "Use the admin portal to add a new event." });
+    }
+  }, [onCreateEvent, setBanner]);
+
+  const loadEvents = React.useCallback(async () => {
+    setLoading(true);
+    setBanner(null);
+    try {
+      const response = await fetch("/api/events", { credentials: "include" });
+
+      if (response.status === 404) {
+        setEvents([]);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to load events.");
+      }
+
+      setEvents(Array.isArray(data.events) ? data.events : []);
+    } catch (error) {
+      setBanner({ type: "error", message: error.message || "Failed to load events." });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
+
+  React.useEffect(() => {
+    if (!loading) {
+      onEventsUpdate(events);
+    }
+  }, [events, loading, onEventsUpdate]);
+
+  const handleRsvp = React.useCallback(
+    async (eventId, action) => {
+      setProcessingId(eventId);
+      setBanner(null);
+
+      try {
+        const response = await fetch(`/api/events/${eventId}/rsvp`, {
+          method: action === "cancel" ? "DELETE" : "POST",
+          credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to update RSVP status.");
+        }
+
+        if (data.event) {
+          setEvents((prev) => {
+            const exists = prev.some((entry) => entry._id === data.event._id);
+            if (exists) {
+              return prev.map((entry) => (entry._id === data.event._id ? data.event : entry));
+            }
+            return [...prev, data.event];
+          });
+        }
+
+        const message = data.message || "RSVP updated.";
+        setBanner({ type: "success", message });
+        toast.success(message);
+      } catch (error) {
+        const errorMessage = error.message || "Unable to update RSVP status.";
+        setBanner({ type: "error", message: errorMessage });
+        toast.error(errorMessage);
+      } finally {
+        setProcessingId(null);
+      }
+    },
+    []
+  );
+
+  const renderEventCard = (event) => {
+    const eventDate = event.date ? new Date(event.date) : null;
+    const formattedDate = eventDate
+      ? eventDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+      : "Date TBA";
+    const timeLabel = event.startTime || "Time TBA";
+    const capacityLabel = event.capacity ? `${event.attendeesCount}/${event.capacity}` : `${event.attendeesCount} attending`;
+    const isAttending = Boolean(event.isAttending);
+    const isProcessing = processingId === event._id;
+
+    return (
+      <div key={event._id} className="flex flex-col justify-between rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
+            {event.category || "General"}
+          </span>
+          <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-600">
+            {capacityLabel}
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          <h3 className="text-xl font-semibold text-gray-900">{event.title}</h3>
+          <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
+          <div className="space-y-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <FiCalendar className="text-orange-500" />
+              <span>{formattedDate}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FiClock className="text-orange-500" />
+              <span>{timeLabel}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FiMapPin className="text-orange-500" />
+              <span>{event.venue}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FiUsers className="text-orange-500" />
+              <span>{event.attendeesCount} attending</span>
+            </div>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            disabled={isProcessing}
+            onClick={() => handleRsvp(event._id, isAttending ? "cancel" : "join")}
+            className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-orange-200 ${
+              isAttending
+                ? "border border-orange-300 bg-white text-orange-600 hover:bg-orange-50"
+                : "bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow hover:from-orange-500 hover:to-orange-700"
+            } ${isProcessing ? "opacity-60" : ""}`}
+          >
+            {isProcessing
+              ? "Processing..."
+              : isAttending
+              ? "Cancel RSVP"
+              : "RSVP"}
+          </button>
+          <button
+            type="button"
+            className="rounded-xl border border-orange-100 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-orange-50"
+            onClick={() => setSelectedEvent(event)}
+          >
+            Details
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full min-h-[90vh] bg-[#FFF8F3] px-3 sm:px-6 lg:px-10 py-6 rounded-xl">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Campus Events</h2>
+          <p className="text-gray-500 text-sm sm:text-base">Discover and join upcoming activities on campus.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={loadEvents}
+            className="rounded-lg border border-orange-300 bg-white px-4 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
+          >
+            Refresh
+          </button>
+          {role === "admin" && (
+            <button
+              type="button"
+              onClick={handleCreateClick}
+              className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400"
+            >
+              Create Event
+            </button>
+          )}
+        </div>
+      </div>
+
+      {banner && (
+        <div
+          className={`mb-6 rounded-lg border px-4 py-3 text-sm shadow-sm ${
+            banner.type === "error"
+              ? "border-red-100 bg-red-50 text-red-600"
+              : "border-emerald-100 bg-emerald-50 text-emerald-700"
+          }`}
+        >
+          {banner.message}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-64 rounded-2xl border border-orange-100 bg-white p-6 shadow-sm animate-pulse">
+              <div className="h-4 w-32 rounded bg-orange-100" />
+              <div className="mt-4 h-6 w-3/4 rounded bg-orange-100" />
+              <div className="mt-2 h-3 w-full rounded bg-orange-100" />
+              <div className="mt-6 h-3 w-1/2 rounded bg-orange-100" />
+              <div className="mt-6 h-10 w-full rounded bg-orange-100" />
+            </div>
+          ))}
+        </div>
+      ) : events.length === 0 ? (
+        <div className="rounded-2xl border border-orange-100 bg-white p-12 text-center shadow-sm">
+          <p className="text-base font-semibold text-gray-700">No upcoming events yet.</p>
+          <p className="mt-2 text-sm text-gray-500">Check back soon or ask an administrator to create one.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {events.map((event) => renderEventCard(event))}
+        </div>
+      )}
+
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setSelectedEvent(null)}
+              className="absolute right-5 top-4 text-2xl text-gray-400 hover:text-gray-600"
+            >
+              &times;
+            </button>
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
+                    {selectedEvent.category || "General"}
+                  </span>
+                  <h3 className="mt-3 text-2xl font-bold text-gray-900">{selectedEvent.title}</h3>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">{selectedEvent.description}</p>
+                </div>
+                <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-600">
+                  {selectedEvent.capacity
+                    ? `${selectedEvent.attendeesCount}/${selectedEvent.capacity} spots`
+                    : `${selectedEvent.attendeesCount} attending`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <FiCalendar className="text-orange-500" />
+                  <span>
+                    {selectedEvent.date
+                      ? new Date(selectedEvent.date).toLocaleDateString(undefined, {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Date TBA"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FiClock className="text-orange-500" />
+                  <span>{selectedEvent.startTime || "Time TBA"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FiMapPin className="text-orange-500" />
+                  <span>{selectedEvent.venue}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FiUsers className="text-orange-500" />
+                  <span>{selectedEvent.attendeesCount} people joined</span>
+                </div>
+              </div>
+
+              {selectedEvent.attendees?.length > 0 && (
+                <div className="rounded-xl border border-orange-100 bg-orange-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-orange-700 mb-2">Attendees</p>
+                  <ul className="max-h-32 space-y-1 overflow-y-auto text-sm text-orange-700">
+                    {selectedEvent.attendees.map((person, index) => (
+                      <li key={`${person.email}-${index}`}>
+                        {person.name || person.email} · {person.email}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedEvent(null)}
+                  className="rounded-lg border border-orange-100 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-orange-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AnnouncementsSection({ role, announcements = [], meta, onAnnouncementsChange = () => {} }) {
+  const [processingId, setProcessingId] = React.useState(null);
+
+  const computedMeta = React.useMemo(() => {
+    const total = typeof meta?.count === "number" ? meta.count : announcements.length;
+    const unread =
+      typeof meta?.unreadCount === "number"
+        ? meta.unreadCount
+        : announcements.filter((item) => !item.isRead).length;
+    return { count: total, unreadCount: unread };
+  }, [announcements, meta]);
+
+  const handleCreateClick = React.useCallback(() => {
+    toast("Open the admin dashboard to create a new announcement.");
+  }, []);
+
+  const handleMarkAsRead = React.useCallback(
+    async (announcementId) => {
+      if (!announcementId) return;
+      const target = announcements.find((item) => item._id === announcementId);
+      if (!target || target.isRead) {
+        return;
+      }
+
+      setProcessingId(announcementId);
+
+      try {
+        const response = await fetch(`/api/notifications/${announcementId}/read`, {
+          method: "POST",
+          credentials: "include",
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to mark announcement as read.");
+        }
+
+        const updatedAnnouncements = announcements.map((item) =>
+          item._id === announcementId
+            ? { ...item, isRead: true, readBy: Array.isArray(item.readBy) ? item.readBy : [] }
+            : item
+        );
+
+        const unreadCount = updatedAnnouncements.filter((item) => !item.isRead).length;
+
+        onAnnouncementsChange({
+          notifications: updatedAnnouncements,
+          meta: {
+            count: updatedAnnouncements.length,
+            unreadCount,
+          },
+        });
+
+        toast.success(data.message || "Announcement marked as read.");
+      } catch (error) {
+        toast.error(error.message || "Failed to mark announcement as read.");
+      } finally {
+        setProcessingId(null);
+      }
+    },
+    [announcements, onAnnouncementsChange]
+  );
+
+  const statusStyles = {
+    new: "bg-orange-100 text-orange-600",
+    update: "bg-blue-100 text-blue-600",
+    reminder: "bg-amber-100 text-amber-700",
+  };
+
+  const urgencyStyles = {
+    high: "bg-red-100 text-red-600",
+    medium: "bg-amber-100 text-amber-700",
+    low: "bg-emerald-100 text-emerald-700",
+  };
+
+  const topicStyles = "bg-emerald-50 text-emerald-600";
+
+  const formatLabel = (value) => {
+    if (!value || typeof value !== "string") return value;
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  };
+
+  const renderAnnouncementCard = (announcement) => {
+    const createdAt = announcement.createdAt ? new Date(announcement.createdAt) : null;
+    const formattedDate = createdAt
+      ? createdAt.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : "Date not available";
+
+    const isProcessing = processingId === announcement._id;
+    const isRead = Boolean(announcement.isRead);
+    const borderAccent = announcement.urgency === "high" ? "border-orange-400" : "border-orange-200";
+    const backgroundAccent = isRead ? "bg-white" : "bg-gradient-to-br from-orange-50 via-white to-white";
+
+    return (
+      <div
+        key={announcement._id}
+        className={`rounded-2xl border ${borderAccent} ${backgroundAccent} p-6 shadow-sm transition`}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span
+              className={`mt-0.5 h-3 w-3 rounded-full ${isRead ? "bg-orange-200" : "bg-orange-500"}`}
+            />
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${
+                  statusStyles[announcement.status] || statusStyles.new
+                }`}
+                >
+                  {formatLabel(announcement.status || "new")}
+                </span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+                  urgencyStyles[announcement.urgency] || urgencyStyles.medium
+                }`}
+                >
+                  {formatLabel(announcement.urgency || "medium")}
+                </span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${topicStyles}`}>
+                  {formatLabel(announcement.topic || announcement.category || "General")}
+                </span>
+                {Array.isArray(announcement.tags) &&
+                  announcement.tags.slice(0, 3).map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-600"
+                    >
+                      <FiTag className="text-[12px]" />
+                      {formatLabel(tag)}
+                    </span>
+                  ))}
+              </div>
+              <h3 className="mt-3 text-xl font-semibold text-gray-900">{announcement.title}</h3>
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                <FiCalendar className="text-orange-500" />
+                <span>{formattedDate}</span>
+              </div>
+            </div>
+          </div>
+          {!isRead && (
+            <button
+              type="button"
+              onClick={() => handleMarkAsRead(announcement._id)}
+              disabled={isProcessing}
+              className={`inline-flex items-center gap-2 rounded-lg border border-orange-200 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50 ${
+                isProcessing ? "opacity-60" : ""
+              }`}
+            >
+              <FiCheck className="text-sm" />
+              {isProcessing ? "Marking..." : "Mark as read"}
+            </button>
+          )}
+        </div>
+        <p className="mt-4 text-sm leading-relaxed text-gray-600">{announcement.message}</p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full min-h-[90vh] bg-[#FFF8F3] px-3 sm:px-6 lg:px-10 py-6 rounded-xl">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Announcements</h2>
+          <p className="text-gray-500 text-sm sm:text-base">
+            Stay updated with campus news • {computedMeta.unreadCount} unread
+          </p>
+        </div>
+        {role === "admin" && (
+          <button
+            type="button"
+            onClick={handleCreateClick}
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-400"
+          >
+            Create Announcement
+          </button>
+        )}
+      </div>
+
+      {announcements.length === 0 ? (
+        <div className="rounded-2xl border border-orange-100 bg-white p-12 text-center shadow-sm">
+          <p className="text-base font-semibold text-gray-700">No announcements yet.</p>
+          <p className="mt-2 text-sm text-gray-500">Check back later for campus updates.</p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {announcements.map((announcement) => renderAnnouncementCard(announcement))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmergencySection({ alerts = [], loading }) {
+  const formatRelativeTime = React.useCallback((value) => {
+    if (!value) return "Just now";
+    const eventTime = new Date(value).getTime();
+    if (Number.isNaN(eventTime)) return "Just now";
+
+    const diffMs = Date.now() - eventTime;
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diffMs < minute) return "Just now";
+    if (diffMs < hour) {
+      const minutes = Math.round(diffMs / minute);
+      return `${minutes} min ago`;
+    }
+    if (diffMs < day) {
+      const hours = Math.round(diffMs / hour);
+      return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    }
+    const days = Math.round(diffMs / day);
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }, []);
+
+  const formatSeverity = (severity) => {
+    if (!severity) return "info";
+    return severity.charAt(0).toUpperCase() + severity.slice(1);
+  };
+
+  const severityStyles = {
+    critical: "bg-red-100 text-red-600",
+    warning: "bg-amber-100 text-amber-700",
+    info: "bg-blue-100 text-blue-600",
+  };
+
+  const orderedAlerts = React.useMemo(() => {
+    return [...alerts].sort((a, b) => {
+      const severityOrder = { critical: 2, warning: 1, info: 0 };
+      const severityDiff = (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
+      if (severityDiff !== 0) return severityDiff;
+      const timeDiff = new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      return timeDiff;
+    });
+  }, [alerts]);
+
+  const handleCall = (tel) => {
+    if (!tel) return;
+    window.location.href = `tel:${tel}`;
+  };
+
+  return (
+    <div className="w-full min-h-[90vh] bg-[#FFF8F3] px-3 sm:px-6 lg:px-10 py-6 rounded-xl">
+      <div className="flex flex-col gap-2 mb-6">
+        <div className="flex items-center gap-3 text-orange-600">
+          <FiShield className="text-3xl" />
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Emergency Alerts</h2>
+            <p className="text-gray-500 text-sm sm:text-base">Stay safe and informed</p>
+          </div>
+        </div>
+      </div>
+
+      <section className="rounded-2xl border border-red-200 bg-red-50/60 p-6 mb-8">
+        <div className="flex items-start gap-3">
+          <FiPhone className="mt-1 text-red-500" />
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-red-600">Emergency Contacts</h3>
+            <p className="text-sm text-red-500">Available for immediate assistance</p>
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {EMERGENCY_CONTACTS.map((contact) => (
+            <div
+              key={contact.id}
+              className="flex h-full flex-col justify-between rounded-xl border border-red-100 bg-white px-5 py-4 shadow-sm"
+            >
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-gray-700">{contact.label}</p>
+                <p className="text-xl font-bold text-orange-500">{contact.phone}</p>
+                <p className="text-xs text-gray-500">{contact.availability}</p>
+                <p className="text-xs text-gray-400 leading-relaxed">{contact.description}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCall(contact.tel)}
+                className="mt-4 w-full rounded-lg border border-orange-200 bg-orange-50 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-100"
+              >
+                Call Now
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4 mb-8">
+        <h3 className="text-xl font-semibold text-gray-900">Recent Alerts</h3>
+        {loading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div key={index} className="h-28 rounded-xl border border-orange-100 bg-white p-4 shadow-sm animate-pulse">
+                <div className="h-4 w-24 rounded bg-orange-100" />
+                <div className="mt-3 h-4 w-1/2 rounded bg-orange-100" />
+                <div className="mt-2 h-3 w-3/4 rounded bg-orange-100" />
+              </div>
+            ))}
+          </div>
+        ) : orderedAlerts.length === 0 ? (
+          <div className="rounded-xl border border-orange-100 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+            No active alerts at the moment. We will notify you if anything changes.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {orderedAlerts.map((alert) => (
+              <div
+                key={alert._id}
+                className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                        severityStyles[alert.severity] || severityStyles.info
+                      }`}
+                    >
+                      {formatSeverity(alert.severity)}
+                    </span>
+                    <span className="text-xs text-gray-400">{formatRelativeTime(alert.createdAt)}</span>
+                  </div>
+                  {alert.metadata?.location && (
+                    <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
+                      {alert.metadata.location}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex items-start gap-2">
+                  <FiAlertTriangle className="mt-1 text-orange-500" />
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900">{alert.title}</h4>
+                    <p className="mt-1 text-sm leading-relaxed text-gray-600">{alert.message}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <h3 className="text-xl font-semibold text-gray-900">Safety Resources</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {SAFETY_RESOURCES.map((resource) => (
+            <div
+              key={resource.title}
+              className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm"
+            >
+              <p className="text-sm font-semibold text-orange-600">{resource.title}</p>
+              <p className="mt-2 text-sm text-gray-600 leading-relaxed">{resource.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function ReportItemForm({ onClose, onSuccess }) {
   const [category, setCategory] = React.useState("lost");
   const [form, setForm] = React.useState({
@@ -1088,10 +1840,12 @@ function ReportItemForm({ onClose, onSuccess }) {
       if (!res.ok) throw new Error(data.message || "Failed to report item");
       setSuccess("Item reported successfully.");
       setForm({ title: "", description: "", location: "", contact: "", image: "", date: "" });
+      toast.success("Item reported successfully.");
       onSuccess?.();
       onClose?.();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || "Failed to report item.");
     } finally {
       setLoading(false);
     }

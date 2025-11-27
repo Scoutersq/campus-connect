@@ -28,6 +28,51 @@ const eventSchema = new mongoose.Schema(
       ref: "Admin", // makes it easy to populate admin info later
       required: true,
     },
+    category: {
+      type: String,
+      trim: true,
+      default: "General",
+      maxlength: [50, "Category cannot exceed 50 characters"],
+    },
+    startTime: {
+      type: String,
+      trim: true,
+      maxlength: [20, "Time label cannot exceed 20 characters"],
+    },
+    capacity: {
+      type: Number,
+      min: [0, "Capacity cannot be negative"],
+      default: 0,
+    },
+    attendees: {
+      type: [
+        {
+          user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+          },
+          name: {
+            type: String,
+            trim: true,
+            required: true,
+            maxlength: 120,
+          },
+          email: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            required: true,
+            maxlength: 254,
+          },
+          rsvpedAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

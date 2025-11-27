@@ -25,6 +25,32 @@ const notificationSchema = new Schema({
         enum:["students","faculty","all"],
         default:"all"
     },
+    status: {
+        type: String,
+        enum: ["new", "update", "reminder"],
+        default: "new",
+    },
+    urgency: {
+        type: String,
+        enum: ["low", "medium", "high"],
+        default: "medium",
+    },
+    topic: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+        default: "General",
+    },
+    tags: {
+        type: [String],
+        default: [],
+        validate: {
+            validator: function (arr) {
+                return Array.isArray(arr) && arr.length <= 6;
+            },
+            message: "A notification can have at most 6 tags.",
+        },
+    },
     createdAt:{
         type:Date,
         default:Date.now
