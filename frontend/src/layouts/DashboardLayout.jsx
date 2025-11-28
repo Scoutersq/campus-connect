@@ -16,19 +16,19 @@ const SIDEBAR_SECTIONS = [
   {
     title: "Main Menu",
     items: [
-      { label: "Dashboard", to: ".", icon: FiGrid, end: true },
-      { label: "Lost & Found", to: "lost-and-found", icon: FiMapPin },
-      { label: "Events", to: "events", icon: FiCalendar },
-      { label: "Announcements", to: "announcements", icon: FiBell },
-      { label: "Discussions", to: "discussions", icon: FiMessageCircle },
-      { label: "Emergency Alerts", to: "emergency-alerts", icon: FiShield },
-      { label: "Notes Sharing", to: "notes", icon: FiFileText },
-      { label: "Skill Exchange", to: "skills", icon: FiUsers },
+      { label: "Dashboard", to: "/dashboard", icon: FiGrid, end: true },
+      { label: "Lost & Found", to: "/dashboard/lost-and-found", icon: FiMapPin },
+      { label: "Events", to: "/dashboard/events", icon: FiCalendar },
+      { label: "Announcements", to: "/dashboard/announcements", icon: FiBell },
+      { label: "Discussions", to: "/dashboard/discussions", icon: FiMessageCircle },
+      { label: "Emergency Alerts", to: "/dashboard/emergency-alerts", icon: FiShield },
+      { label: "Notes Sharing", to: "/dashboard/notes", icon: FiFileText },
+      { label: "Skill Exchange", to: "/dashboard/skills", icon: FiUsers },
     ],
   },
   {
     title: "Account",
-    items: [{ label: "Profile", to: "profile", icon: FiUser }],
+    items: [{ label: "Profile", to: "/dashboard/profile", icon: FiUser }],
   },
 ];
 
@@ -43,7 +43,7 @@ export default function DashboardLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem("cc_role");
-    navigate("/login");
+    navigate("/");
   };
 
   return (

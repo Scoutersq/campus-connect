@@ -29,37 +29,32 @@ app.disable("x-powered-by");
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(helmet());
+app.use(cors({
+  origin: 'https://campus-connect-gold-tau.vercel.app/',
+   credentials: true
+}));
 
-const configuredOrigins = (process.env.FRONTEND_URL || "")
-	.split(",")
-	.map((value) => value.trim().replace(/\/$/, ""))
-	.filter(Boolean);
-
-const defaultProductionOrigins = ["https://campus-connect-gold-tau.vercel.app"];
-
-const devOrigins = [
-	"http://localhost:5173",
-	"http://127.0.0.1:5173",
-	"http://localhost:4173",
-];
-
-const allowedOrigins = [...new Set([...configuredOrigins, ...defaultProductionOrigins, ...devOrigins])];
-
-app.use(
-	cors({
-		origin: allowedOrigins.length ? allowedOrigins : true,
-		credentials: true,
-	})
-);
+const authLimiter = rateLimit({
+	windowMs: 60 * 1000,
+	max: 15,
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: {
+		success: false,
+		message: "Too many authentication attempts. Please wait a minute before trying again.",
+	},
+});
 
 const apiLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
-	max: 100,
+	max: 500,
 	standardHeaders: true,
 	legacyHeaders: false,
+	skip: (req) => req.path.startsWith("/auth"),
 });
 
-app.use(apiLimiter);
+app.use("/api/auth", authLimiter);
+app.use("/api", apiLimiter);
 
 app.use("/api/auth/admin", adminRouter);
 app.use("/api/auth/user", userRouter);
