@@ -7,6 +7,7 @@ import {
   FiUser,
   FiRefreshCcw,
 } from "react-icons/fi";
+import { toast } from "react-hot-toast";
 import { buildApiUrl } from "../../utils/fetchResource";
 
 const CATEGORY_LABELS = {
@@ -31,7 +32,6 @@ export default function AnnouncementsPage() {
   const [showUnreadOnly, setShowUnreadOnly] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
-  const [feedback, setFeedback] = React.useState("");
   const [refreshKey, setRefreshKey] = React.useState(0);
   const pendingMarkRef = React.useRef(null);
 
@@ -95,10 +95,10 @@ export default function AnnouncementsPage() {
           item._id === announcementId ? { ...item, isRead: true } : item
         )
       );
-      setFeedback("Marked as read.");
+      toast.success("Marked as read.");
     } catch (err) {
       console.error("Mark announcement error", err);
-      setFeedback(err.message || "Unable to update announcement status.");
+      toast.error(err.message || "Unable to update announcement status.");
     } finally {
       pendingMarkRef.current = null;
     }
@@ -209,11 +209,6 @@ export default function AnnouncementsPage() {
         {error && (
           <div className="mt-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
-          </div>
-        )}
-        {feedback && (
-          <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-600">
-            {feedback}
           </div>
         )}
       </section>
