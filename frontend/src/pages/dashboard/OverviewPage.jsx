@@ -31,67 +31,60 @@ export default function OverviewPage() {
       setLoading(true);
       setError("");
 
-      let encounteredError = false;
+      try {
+        const [
+          profileResult,
+          lostResult,
+          foundResult,
+          eventsResult,
+          notificationsResult,
+          alertsResult,
+        ] = await Promise.all([
+          fetchResource("/api/profile/me", null, { signal: controller.signal }),
+          fetchResource("/api/lost/preview", { preview: [] }, { signal: controller.signal }),
+          fetchResource("/api/found/preview", { preview: [] }, { signal: controller.signal }),
+          fetchResource("/api/events", { events: [] }, { signal: controller.signal }),
+          fetchResource(
+            "/api/announcements",
+            { notifications: [], count: 0, unreadCount: 0 },
+            { signal: controller.signal }
+          ),
+          fetchResource("/api/emergency/active", { data: [] }, { signal: controller.signal }),
+        ]);
 
-      const profileResult = await fetchResource(
-        "/api/profile/me",
-        null,
-        { signal: controller.signal }
-      );
-      if (profileResult.error) encounteredError = true;
+        if (cancelled) {
+          return;
+        }
 
-      const lostResult = await fetchResource(
-        "/api/lost/preview",
-        { preview: [] },
-        { signal: controller.signal }
-      );
-      if (lostResult.error) encounteredError = true;
+        const encounteredError = [
+          profileResult,
+          lostResult,
+          foundResult,
+          eventsResult,
+          notificationsResult,
+          alertsResult,
+        ].some((result) => Boolean(result.error));
 
-      const foundResult = await fetchResource(
-        "/api/found/preview",
-        { preview: [] },
-        { signal: controller.signal }
-      );
-      if (foundResult.error) encounteredError = true;
+        setProfile(profileResult.data?.profile ?? null);
+        setLostItems(lostResult.data?.preview ?? []);
+        setFoundItems(foundResult.data?.preview ?? []);
+        setEvents(eventsResult.data?.events ?? []);
+        setAnnouncements((notificationsResult.data ?? {}).notifications ?? []);
+        setAlerts(alertsResult.data?.data ?? []);
 
-      const eventsResult = await fetchResource(
-        "/api/events",
-        { events: [] },
-        { signal: controller.signal }
-      );
-      if (eventsResult.error) encounteredError = true;
-
-      const notificationsResult = await fetchResource(
-        "/api/announcements",
-        { notifications: [], count: 0, unreadCount: 0 },
-        { signal: controller.signal }
-      );
-      if (notificationsResult.error) encounteredError = true;
-
-      const alertsResult = await fetchResource(
-        "/api/emergency/active",
-        { data: [] },
-        { signal: controller.signal }
-      );
-      if (alertsResult.error) encounteredError = true;
-
-      if (cancelled) {
-        return;
+        if (encounteredError) {
+          setError("Some dashboard data could not be loaded. Please refresh to retry.");
+        }
+      } catch (err) {
+        if (err.name !== "AbortError" && !cancelled) {
+          console.error("Dashboard data load error", err);
+          setError("Failed to load dashboard data. Please try again.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-
-      setProfile(profileResult.data?.profile ?? null);
-      setLostItems(lostResult.data?.preview ?? []);
-      setFoundItems(foundResult.data?.preview ?? []);
-      setEvents(eventsResult.data?.events ?? []);
-      const announcementsPayload = notificationsResult.data ?? {};
-      setAnnouncements(announcementsPayload.notifications ?? []);
-      setAlerts(alertsResult.data?.data ?? []);
-
-      if (encounteredError) {
-        setError("Some dashboard data could not be loaded. Please refresh to retry.");
-      }
-
-      setLoading(false);
     })();
 
     return () => {
@@ -100,8 +93,13 @@ export default function OverviewPage() {
     };
   }, []);
 
-  const fullName = profile ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() : "";
-  const greetingName = fullName || profile?.email || "Explorer";
+  const greetingName = React.useMemo(() => {
+    if (!profile) {
+      return "";
+    }
+    const fullName = `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim();
+    return fullName || profile.email || "Explorer";
+  }, [profile]);
 
   const greetingTime = React.useMemo(() => {
     const hour = new Date().getHours();
@@ -196,7 +194,17 @@ export default function OverviewPage() {
     <div className="space-y-8">
       <div className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
         <p className="text-sm font-semibold text-orange-500">Welcome back</p>
-        <h1 className="mt-2 text-3xl font-bold text-gray-900">{greetingTime}, {greetingName}</h1>
+        <h1 className="mt-2 flex items-center gap-2 text-3xl font-bold text-gray-900">
+          <span>{greetingTime}</span>
+          {greetingName ? (
+            <span>, {greetingName}</span>
+          ) : (
+            <span
+              aria-hidden="true"
+              className="inline-flex h-6 w-24 animate-pulse rounded bg-orange-100"
+            />
+          )}
+        </h1>
         <p className="mt-2 text-sm text-gray-500">
           Here's a quick overview of what's happening around campus today.
         </p>
