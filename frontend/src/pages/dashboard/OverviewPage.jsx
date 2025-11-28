@@ -103,6 +103,20 @@ export default function OverviewPage() {
   const fullName = profile ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() : "";
   const greetingName = fullName || profile?.email || "Explorer";
 
+  const greetingTime = React.useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return "Good morning";
+    }
+    if (hour >= 12 && hour < 17) {
+      return "Good afternoon";
+    }
+    if (hour >= 17 && hour < 24) {
+      return "Good evening";
+    }
+    return "Hello";
+  }, []);
+
   const lostCount = lostItems.length;
   const foundCount = foundItems.length;
   const eventsCount = events.length;
@@ -182,7 +196,7 @@ export default function OverviewPage() {
     <div className="space-y-8">
       <div className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
         <p className="text-sm font-semibold text-orange-500">Welcome back</p>
-        <h1 className="mt-2 text-3xl font-bold text-gray-900">Hello, {greetingName}</h1>
+        <h1 className="mt-2 text-3xl font-bold text-gray-900">{greetingTime}, {greetingName}</h1>
         <p className="mt-2 text-sm text-gray-500">
           Here's a quick overview of what's happening around campus today.
         </p>
