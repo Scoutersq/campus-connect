@@ -30,27 +30,32 @@ app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(helmet());
 
+const normalizeOrigin = (value = "") => value.replace(/\/?$/, "").trim();
+
 const defaultOrigins = [
 	"http://localhost:5173",
 	"http://127.0.0.1:5173",
 	"http://localhost:4173",
-];
+].map(normalizeOrigin);
+
 const envOrigins = (process.env.CLIENT_ORIGIN || "")
 	.split(",")
-	.map((entry) => entry.trim())
+	.map(normalizeOrigin)
 	.filter(Boolean);
+
 const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
 app.use(
 	cors({
 		origin(origin, callback) {
+			const normalizedOrigin = normalizeOrigin(origin);
 			if (!origin) {
 				return callback(null, true);
 			}
-			if (allowedOrigins.includes(origin)) {
+			if (allowedOrigins.includes(normalizedOrigin)) {
 				return callback(null, true);
 			}
-			return callback(new Error(`Origin ${origin} not allowed by CORS`));
+			return callback(new Error(`Origin ${normalizedOrigin || origin} not allowed by CORS`));
 		},
 		credentials: true,
 	})
