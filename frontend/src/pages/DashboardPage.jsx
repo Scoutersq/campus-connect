@@ -7,6 +7,7 @@ import EventsPage from "./dashboard/EventsPage";
 import AnnouncementsPage from "./dashboard/AnnouncementsPage";
 import EmergencyAlertsPage from "./dashboard/EmergencyAlertsPage";
 import PlaceholderPage from "./dashboard/PlaceholderPage";
+import NotesPage from "./dashboard/NotesPage";
 
 export default function DashboardPage() {
   return (
@@ -18,7 +19,7 @@ export default function DashboardPage() {
         <Route path="announcements" element={<AnnouncementsPage />} />
         <Route path="emergency-alerts" element={<EmergencyAlertsPage />} />
         <Route path="discussions" element={<PlaceholderPage title="Discussions" />} />
-        <Route path="notes" element={<PlaceholderPage title="Notes Sharing" />} />
+        <Route path="notes" element={<NotesPage />} />
         <Route path="skills" element={<PlaceholderPage title="Skill Exchange" />} />
         <Route path="profile" element={<PlaceholderPage title="Profile" />} />
         <Route path="*" element={<Navigate to="." replace />} />

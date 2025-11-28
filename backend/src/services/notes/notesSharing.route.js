@@ -1,58 +1,166 @@
 const { Router } = require("express");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const noteSharingRouter = Router();
 const { noteSharingModel } = require("../../models/notesSharing.model.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
-const { validateBody, validateParams } = require("../../utils/validation.js");
+const { validateParams } = require("../../utils/validation.js");
 
 const uploadSchema = z.object({
   title: z.string().trim().min(3).max(120),
   description: z.string().trim().min(10).max(500),
   subject: z.string().trim().min(2).max(80),
-  fileUrl: z.string().trim().url().max(2048),
 });
+
+const uploadsRoot = path.resolve(__dirname, "../../../uploads");
+const notesUploadDir = path.join(uploadsRoot, "notes");
+fs.mkdirSync(notesUploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, notesUploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    cb(null, `${unique}${path.extname(file.originalname || "").toLowerCase()}`);
+  },
+});
+
+const SUPPORTED_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (SUPPORTED_MIME_TYPES.has(file.mimetype)) {
+      return cb(null, true);
+    }
+
+    cb(new Error("Only PDF or DOC/DOCX files are supported."), false);
+  },
+});
+
+const formatUploader = (uploadedBy) => {
+  if (!uploadedBy) return null;
+  const plain = uploadedBy.toObject ? uploadedBy.toObject() : uploadedBy;
+  const name = [plain.firstName, plain.lastName].filter(Boolean).join(" ");
+  return {
+    _id: plain._id,
+    firstName: plain.firstName,
+    lastName: plain.lastName,
+    email: plain.email,
+    name: name || plain.email || "Anonymous",
+  };
+};
 
 const withUpvoteCount = (note) => {
   if (!note) return note;
-
-  const upvotes = Array.isArray(note.upvotedBy) ? note.upvotedBy.length : 0;
-  return { ...note, upvotes };
+  const plain = note.toObject ? note.toObject() : note;
+  const upvotes = Array.isArray(plain.upvotedBy) ? plain.upvotedBy.length : 0;
+  const noteId = plain._id?.toString?.() || String(plain._id || "");
+  return {
+    ...plain,
+    upvotes,
+    uploader: formatUploader(plain.uploadedBy),
+    previewUrl: noteId ? `/api/notes/${noteId}/preview` : undefined,
+    downloadUrl: noteId ? `/api/notes/${noteId}/download` : undefined,
+  };
 };
 
-noteSharingRouter.post(
-  "/upload",
-  userMiddleware,
-  validateBody(uploadSchema),
-  async (req, res) => {
-    try {
-      const note = await noteSharingModel.create({
-        title: req.body.title,
-        description: req.body.description,
-        subject: req.body.subject,
-        fileUrl: req.body.fileUrl,
-        uploadedBy: req.userID,
-      });
+const uploadSingleNote = (req, res, next) => {
+  upload.single("file")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+};
 
-      return res.status(201).json({
-        success: true,
-        message: "Note uploaded successfully.",
-        note,
-      });
-    } catch (error) {
-      console.error("Error uploading note:", error);
-      return res.status(500).json({
+const removeUploadedFile = (file) => {
+  if (!file) return;
+  const targetPath = file.path || (file.filename ? path.join(notesUploadDir, file.filename) : null);
+  if (!targetPath) return;
+  try {
+    if (fs.existsSync(targetPath)) {
+      fs.unlink(targetPath, () => {});
+    }
+  } catch (_err) {
+    /* noop */
+  }
+};
+
+noteSharingRouter.post("/upload", userMiddleware, uploadSingleNote, async (req, res) => {
+  let parsedBody;
+  try {
+    parsedBody = uploadSchema.parse(req.body ?? {});
+  } catch (error) {
+    removeUploadedFile(req.file);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
         success: false,
-        message: "Internal Server Error.",
-        error: error.message,
+        message: "Validation failed.",
+        errors: error.errors?.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
       });
     }
+    return res.status(400).json({ success: false, message: error.message });
   }
-);
 
-noteSharingRouter.get("/all", userMiddleware, async (req, res) => {
   try {
-    const notes = await noteSharingModel.find({}).lean();
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "A PDF or DOC/DOCX file is required.",
+      });
+    }
+
+    const note = await noteSharingModel.create({
+      title: parsedBody.title,
+      description: parsedBody.description,
+      subject: parsedBody.subject,
+      fileUrl: `/uploads/notes/${req.file.filename}`,
+      storageName: req.file.filename,
+      fileName: req.file.originalname,
+      fileType: req.file.mimetype,
+      fileSize: req.file.size,
+      uploadedBy: req.userID,
+    });
+
+    await note.populate("uploadedBy", "firstName lastName email");
+
+    return res.status(201).json({
+      success: true,
+      message: "Note uploaded successfully.",
+      note: withUpvoteCount(note),
+    });
+  } catch (error) {
+    removeUploadedFile(req.file);
+    console.error("Error uploading note:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error.",
+      error: error.message,
+    });
+  }
+});
+
+noteSharingRouter.get("/all", userMiddleware, async (_req, res) => {
+  try {
+    const notes = await noteSharingModel
+      .find({})
+      .sort({ createdAt: -1 })
+      .populate("uploadedBy", "firstName lastName email")
+      .lean({ virtuals: false });
+
     const formatted = notes.map(withUpvoteCount);
 
     return res.status(200).json({ success: true, notes: formatted });
@@ -73,7 +181,13 @@ const noteIdParamsSchema = z.object({
     .regex(/^[0-9a-fA-F]{24}$/, "Invalid note id."),
 });
 
-// Allow access when token belongs to the uploader (user) or an admin account.
+const resolveNoteFilePath = (note) => {
+  if (!note?.storageName) {
+    return null;
+  }
+  return path.join(notesUploadDir, note.storageName);
+};
+
 const authorizeNoteOwnerOrAdmin = (req, res, next) => {
   try {
     const token = req.cookies?.token;
@@ -130,7 +244,10 @@ noteSharingRouter.get(
   validateParams(noteIdParamsSchema),
   async (req, res) => {
     try {
-      const note = await noteSharingModel.findById(req.params.noteId).lean();
+      const note = await noteSharingModel
+        .findById(req.params.noteId)
+        .populate("uploadedBy", "firstName lastName email")
+        .lean();
 
       if (!note) {
         return res.status(404).json({
@@ -142,6 +259,115 @@ noteSharingRouter.get(
       return res.status(200).json({ success: true, note: withUpvoteCount(note) });
     } catch (error) {
       console.error("Error fetching note:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error.",
+        error: error.message,
+      });
+    }
+  }
+);
+
+noteSharingRouter.get(
+  "/:noteId/preview",
+  userMiddleware,
+  validateParams(noteIdParamsSchema),
+  async (req, res) => {
+    try {
+      const note = await noteSharingModel.findById(req.params.noteId).lean();
+
+      if (!note) {
+        return res.status(404).json({
+          success: false,
+          message: "Note not found.",
+        });
+      }
+
+      const filePath = resolveNoteFilePath(note);
+
+      if (!filePath || !fs.existsSync(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: "File not available for preview.",
+        });
+      }
+
+      res.setHeader("Content-Type", note.fileType || "application/octet-stream");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${note.fileName || note.storageName}"`
+      );
+      const stream = fs.createReadStream(filePath);
+      stream.on("error", (streamError) => {
+        console.error("Error streaming note preview:", streamError);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: "Failed to load the note preview.",
+          });
+        } else {
+          res.destroy(streamError);
+        }
+      });
+      return stream.pipe(res);
+    } catch (error) {
+      console.error("Error previewing note:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error.",
+        error: error.message,
+      });
+    }
+  }
+);
+
+noteSharingRouter.get(
+  "/:noteId/download",
+  userMiddleware,
+  validateParams(noteIdParamsSchema),
+  async (req, res) => {
+    try {
+      const note = await noteSharingModel.findById(req.params.noteId);
+
+      if (!note) {
+        return res.status(404).json({
+          success: false,
+          message: "Note not found.",
+        });
+      }
+
+      const filePath = resolveNoteFilePath(note);
+
+      if (!filePath || !fs.existsSync(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: "File not available for download.",
+        });
+      }
+
+      note.downloads = (note.downloads || 0) + 1;
+      await note.save();
+
+      res.setHeader("Content-Type", note.fileType || "application/octet-stream");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${note.fileName || note.storageName}"`
+      );
+      const stream = fs.createReadStream(filePath);
+      stream.on("error", (streamError) => {
+        console.error("Error streaming note download:", streamError);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: "Failed to download the note.",
+          });
+        } else {
+          res.destroy(streamError);
+        }
+      });
+      return stream.pipe(res);
+    } catch (error) {
+      console.error("Error downloading note:", error);
       return res.status(500).json({
         success: false,
         message: "Internal Server Error.",
@@ -163,6 +389,7 @@ noteSharingRouter.post(
           { $addToSet: { upvotedBy: req.userID } },
           { new: true }
         )
+        .populate("uploadedBy", "firstName lastName email")
         .lean();
 
       if (updatedNote) {
@@ -175,6 +402,7 @@ noteSharingRouter.post(
 
       const existingNote = await noteSharingModel
         .findById(req.params.noteId)
+        .populate("uploadedBy", "firstName lastName email")
         .lean();
 
       if (!existingNote) {
@@ -225,7 +453,12 @@ noteSharingRouter.delete(
         });
       }
 
+      const filePath = resolveNoteFilePath(note);
       await note.deleteOne();
+
+      if (filePath && fs.existsSync(filePath)) {
+        fs.unlink(filePath, () => {});
+      }
 
       return res.status(200).json({
         success: true,
