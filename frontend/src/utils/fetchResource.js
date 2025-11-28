@@ -1,13 +1,25 @@
+const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
+export const buildApiUrl = (url) => {
+  if (!url) return API_BASE;
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  const normalized = url.startsWith("/") ? url : `/${url}`;
+  return `${API_BASE}${normalized}`;
+};
+
 export async function fetchResource(url, fallback, options = {}) {
+  const requestUrl = buildApiUrl(url);
   try {
-    const response = await fetch(url, { credentials: "include", ...options });
+    const response = await fetch(requestUrl, { credentials: "include", ...options });
 
     if (!response.ok) {
       if (response.status === 404) {
         return { data: fallback, error: null };
       }
 
-      let message = `Failed to fetch ${url}`;
+      let message = `Failed to fetch ${requestUrl}`;
       try {
         const errorBody = await response.json();
         if (errorBody?.message) {
@@ -26,6 +38,6 @@ export async function fetchResource(url, fallback, options = {}) {
     if (error.name === "AbortError") {
       return { data: fallback, error: null };
     }
-    return { data: fallback, error: error.message || `Failed to fetch ${url}` };
+    return { data: fallback, error: error.message || `Failed to fetch ${requestUrl}` };
   }
 }

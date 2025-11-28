@@ -29,10 +29,32 @@ app.disable("x-powered-by");
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(helmet());
-app.use(cors({
-  origin: 'https://campus-connect-gold-tau.vercel.app/',
-   credentials: true
-}));
+
+const defaultOrigins = [
+	"http://localhost:5173",
+	"http://127.0.0.1:5173",
+	"http://localhost:4173",
+];
+const envOrigins = (process.env.CLIENT_ORIGIN || "")
+	.split(",")
+	.map((entry) => entry.trim())
+	.filter(Boolean);
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+
+app.use(
+	cors({
+		origin(origin, callback) {
+			if (!origin) {
+				return callback(null, true);
+			}
+			if (allowedOrigins.includes(origin)) {
+				return callback(null, true);
+			}
+			return callback(new Error(`Origin ${origin} not allowed by CORS`));
+		},
+		credentials: true,
+	})
+);
 
 const authLimiter = rateLimit({
 	windowMs: 60 * 1000,

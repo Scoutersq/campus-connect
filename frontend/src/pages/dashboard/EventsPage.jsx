@@ -7,6 +7,7 @@ import {
   FiClock,
   FiCheck,
 } from "react-icons/fi";
+import { buildApiUrl } from "../../utils/fetchResource";
 
 const STATUS_BADGES = {
   open: "bg-emerald-100 text-emerald-600",
@@ -46,7 +47,7 @@ export default function EventsPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/events", { credentials: "include", signal });
+      const response = await fetch(buildApiUrl("/api/events"), { credentials: "include", signal });
 
       if (response.status === 404) {
         setEvents([]);
@@ -88,7 +89,7 @@ export default function EventsPage() {
       setFeedback("");
 
       try {
-        const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        const response = await fetch(buildApiUrl(`/api/events/${eventId}/rsvp`), {
           method: isAttending ? "DELETE" : "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

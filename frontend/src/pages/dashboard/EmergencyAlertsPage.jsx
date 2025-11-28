@@ -8,6 +8,7 @@ import {
   FiRefreshCcw,
   FiCheck,
 } from "react-icons/fi";
+import { buildApiUrl } from "../../utils/fetchResource";
 
 const SEVERITY_STYLES = {
   critical: "border-red-200 bg-red-50 text-red-700",
@@ -36,7 +37,7 @@ export default function EmergencyAlertsPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/emergency/active", { credentials: "include", signal });
+      const response = await fetch(buildApiUrl("/api/emergency/active"), { credentials: "include", signal });
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
@@ -71,7 +72,7 @@ export default function EmergencyAlertsPage() {
     setFeedback("");
 
     try {
-      const response = await fetch(`/api/emergency/${alertId}/acknowledge`, {
+      const response = await fetch(buildApiUrl(`/api/emergency/${alertId}/acknowledge`), {
         method: "POST",
         credentials: "include",
       });

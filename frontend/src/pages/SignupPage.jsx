@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { buildApiUrl } from "../utils/fetchResource";
 
 const roles = [
   { label: "User", value: "user" },
@@ -35,7 +36,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const endpoint = role === "admin" ? "/api/auth/admin/signup" : "/api/auth/user/signup";
-      const res = await fetch(endpoint, {
+      const res = await fetch(buildApiUrl(endpoint), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -62,7 +63,7 @@ export default function SignupPage() {
       }
       // After signup, automatically log the user in
       const loginEndpoint = role === "admin" ? "/api/auth/admin/signin" : "/api/auth/user/signin";
-      const loginRes = await fetch(loginEndpoint, {
+      const loginRes = await fetch(buildApiUrl(loginEndpoint), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, password: form.password }),

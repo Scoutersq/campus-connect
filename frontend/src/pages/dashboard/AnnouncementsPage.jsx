@@ -7,6 +7,7 @@ import {
   FiUser,
   FiRefreshCcw,
 } from "react-icons/fi";
+import { buildApiUrl } from "../../utils/fetchResource";
 
 const CATEGORY_LABELS = {
   notices: "Notice",
@@ -39,7 +40,7 @@ export default function AnnouncementsPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/announcements", { credentials: "include", signal });
+      const response = await fetch(buildApiUrl("/api/announcements"), { credentials: "include", signal });
 
       if (response.status === 404) {
         setAnnouncements([]);
@@ -79,7 +80,7 @@ export default function AnnouncementsPage() {
     pendingMarkRef.current = announcementId;
 
     try {
-      const response = await fetch(`/api/announcements/${announcementId}/read`, {
+      const response = await fetch(buildApiUrl(`/api/announcements/${announcementId}/read`), {
         method: "POST",
         credentials: "include",
       });

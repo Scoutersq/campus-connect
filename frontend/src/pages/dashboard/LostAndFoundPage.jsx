@@ -5,6 +5,7 @@ import {
   FiSearch,
 } from "react-icons/fi";
 import ReportItemForm from "../../components/ReportItemForm";
+import { buildApiUrl } from "../../utils/fetchResource";
 
 const SUMMARY_CONFIG = [
   {
@@ -74,8 +75,8 @@ export default function LostAndFoundPage() {
 
       try {
         const [lostResponse, foundResponse] = await Promise.all([
-          fetch("/api/lost/preview", { credentials: "include", signal }),
-          fetch("/api/found/preview", { credentials: "include", signal }),
+          fetch(buildApiUrl("/api/lost/preview"), { credentials: "include", signal }),
+          fetch(buildApiUrl("/api/found/preview"), { credentials: "include", signal }),
         ]);
 
         const lostData = await parsePayload(lostResponse);
