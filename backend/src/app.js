@@ -33,6 +33,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(
 	helmet({
+		contentSecurityPolicy: false,
 		crossOriginResourcePolicy: false,
 		crossOriginEmbedderPolicy: false,
 		frameguard: false,
@@ -71,6 +72,17 @@ app.use(
 );
 
 app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
+
+const frameAncestors = ["'self'", ...allowedOrigins.filter((origin) => /^https?:\/\//i.test(origin))];
+const uniqueFrameAncestors = [...new Set(frameAncestors)];
+
+app.use((req, res, next) => {
+	res.removeHeader("X-Frame-Options");
+	if (!res.headersSent) {
+		res.setHeader("Content-Security-Policy", `frame-ancestors ${uniqueFrameAncestors.join(" ")}`);
+	}
+	next();
+});
 
 const authLimiter = rateLimit({
 	windowMs: 60 * 1000,
