@@ -7,6 +7,16 @@ const { validateBody } = require("../../utils/validation.js");
 
 const adminRouter = Router();
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/",
+};
+
 const adminSignupSchema = z.object({
   firstName: z.string().trim().min(3).max(20),
   lastName: z.string().trim().min(2).max(10),
@@ -69,12 +79,7 @@ adminRouter.post("/signin", validateBody(adminSigninSchema), async (req, res) =>
       { expiresIn: "7d" }
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false, // set to true only in production with HTTPS
-      sameSite: "lax", // allows cross-port cookies for local dev
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     return res.status(200).json({ success: true, message: "Signed in successfully." });
   } catch (error) {

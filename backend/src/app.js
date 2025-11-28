@@ -26,6 +26,7 @@ const cookieParser = require("cookie-parser");
 dotenv.config();
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(helmet());
