@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { buildApiUrl } from "../utils/fetchResource";
 import {
   FiGrid,
   FiMapPin,
@@ -73,10 +74,19 @@ export default function DashboardLayout({ role: incomingRole = "user" }) {
     }
   }, [incomingRole]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("cc_role");
-    navigate("/");
-  };
+  const handleLogout = React.useCallback(async () => {
+    try {
+      await fetch(buildApiUrl("/api/auth/logout"), {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout request failed", error);
+    } finally {
+      localStorage.removeItem("cc_role");
+      navigate("/");
+    }
+  }, [navigate]);
 
   const sections = role === "admin" ? ADMIN_NAVIGATION : USER_NAVIGATION;
 

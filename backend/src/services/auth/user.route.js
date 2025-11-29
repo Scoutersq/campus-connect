@@ -5,7 +5,7 @@ const { randomUUID } = require("crypto");
 const { z } = require("zod");
 const { userModel } = require("../../models/user.model.js");
 const { validateBody } = require("../../utils/validation.js");
-const { SESSION_TTL_MS } = require("../../utils/session.js");
+const { SESSION_TTL_MS, clearActiveSession } = require("../../utils/session.js");
 const { studentIdModel } = require("../../models/studentId.model.js");
 const { normalizeStudentId, allowedStudentIds } = require("../../utils/studentIds.js");
 
@@ -122,10 +122,7 @@ userRouter.post("/signin", validateBody(signinSchema), async (req, res) => {
     );
 
     if (hasActiveSession) {
-      return res.status(409).json({
-        success: false,
-        message: "This account is already signed in on another device. Please sign out there first.",
-      });
+      await clearActiveSession({ role: "user", id: user._id });
     }
 
     const sessionId = randomUUID();
@@ -147,7 +144,11 @@ userRouter.post("/signin", validateBody(signinSchema), async (req, res) => {
 
     res.cookie("token", token, cookieOptions);
 
-    return res.status(200).json({ success: true, message: "Signed in successfully." });
+    const resetNotice = hasActiveSession
+      ? "Signed in successfully. Previous session ended."
+      : "Signed in successfully.";
+
+    return res.status(200).json({ success: true, message: resetNotice });
   } catch (error) {
     let status = 500;
     let message = "Internal server error.";

@@ -1,5 +1,9 @@
 const { Router } = require("express");
-const { verifySessionToken, clearActiveSession } = require("../../utils/session.js");
+const {
+  verifySessionToken,
+  clearActiveSession,
+  extractTokenFromRequest,
+} = require("../../utils/session.js");
 
 const authRouter = Router();
 
@@ -13,7 +17,7 @@ const cookieOptions = {
 };
 
 authRouter.post("/logout", async (req, res) => {
-  const token = req.cookies?.token;
+  const token = extractTokenFromRequest(req);
 
   if (token) {
     try {
