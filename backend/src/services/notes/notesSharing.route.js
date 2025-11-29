@@ -182,11 +182,36 @@ const noteIdParamsSchema = z.object({
     .regex(/^[0-9a-fA-F]{24}$/, "Invalid note id."),
 });
 
+const stripLeadingUploads = (value = "") => value.replace(/^uploads\//i, "");
+
 const resolveNoteFilePath = (note) => {
-  if (!note?.storageName) {
+  if (!note) {
     return null;
   }
-  return path.join(notesUploadDir, note.storageName);
+
+  if (note.storageName) {
+    return path.join(notesUploadDir, note.storageName);
+  }
+
+  const rawFileUrl = note.fileUrl || note.fileURL || note.file_path;
+
+  if (typeof rawFileUrl !== "string" || rawFileUrl.length === 0) {
+    return null;
+  }
+
+  const withoutProtocol = rawFileUrl.replace(/^https?:\/\/[^/]+/i, "").replace(/\\/g, "/");
+  const normalized = withoutProtocol.replace(/^\/+/, "");
+
+  if (!normalized.toLowerCase().startsWith("uploads/")) {
+    return null;
+  }
+
+  const relative = stripLeadingUploads(normalized);
+  if (!relative) {
+    return null;
+  }
+
+  return path.join(notesUploadDir, relative);
 };
 
 const authorizeNoteOwnerOrAdmin = async (req, res, next) => {
@@ -262,6 +287,9 @@ noteSharingRouter.get(
       const filePath = resolveNoteFilePath(note);
 
       if (!filePath || !fs.existsSync(filePath)) {
+        if (note.fileUrl) {
+          return res.redirect(note.fileUrl);
+        }
         return res.status(404).json({
           success: false,
           message: "File not available for preview.",
@@ -314,15 +342,27 @@ noteSharingRouter.get(
 
       const filePath = resolveNoteFilePath(note);
 
+      const incrementDownload = async () => {
+        try {
+          note.downloads = (note.downloads || 0) + 1;
+          await note.save();
+        } catch (persistError) {
+          console.error("Error updating download count:", persistError);
+        }
+      };
+
       if (!filePath || !fs.existsSync(filePath)) {
+        await incrementDownload();
+        if (note.fileUrl) {
+          return res.redirect(note.fileUrl);
+        }
         return res.status(404).json({
           success: false,
           message: "File not available for download.",
         });
       }
 
-      note.downloads = (note.downloads || 0) + 1;
-      await note.save();
+      await incrementDownload();
 
       res.setHeader("Content-Type", note.fileType || "application/octet-stream");
       res.setHeader(
