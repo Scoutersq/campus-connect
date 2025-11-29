@@ -2,6 +2,14 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://campus-connect-1-w95c.onrender.com/api/$1"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://campus-connect-1-w95c.onrender.com/uploads/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

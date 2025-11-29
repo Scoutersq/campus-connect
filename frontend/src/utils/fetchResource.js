@@ -1,4 +1,7 @@
-const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const API_BASE = (
+  import.meta.env.VITE_API_URL?.replace(/\/$/, "") ||
+  "https://campus-connect-1-w95c.onrender.com"
+);
 
 export const buildApiUrl = (url) => {
   if (!url) return API_BASE;

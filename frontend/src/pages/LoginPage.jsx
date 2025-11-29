@@ -60,7 +60,12 @@ export default function LoginPage() {
         credentials: "include",
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (_jsonError) {
+        data = {};
+      }
       if (!response.ok) {
         throw new Error(data.message || "Login failed.");
       }
