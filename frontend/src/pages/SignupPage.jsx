@@ -9,6 +9,7 @@ export default function SignupPage() {
     lastName: "",
     email: "",
     studentId: "",
+    adminCode: "",
     password: "",
     confirmPassword: "",
   });
@@ -19,9 +20,10 @@ export default function SignupPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    const shouldUppercase = name === "studentId" || name === "adminCode";
     setForm((prev) => ({
       ...prev,
-      [name]: name === "studentId" ? value.toUpperCase() : value,
+      [name]: shouldUppercase ? value.toUpperCase() : value,
     }));
   };
 
@@ -46,6 +48,11 @@ export default function SignupPage() {
       return;
     }
 
+    if (role === "admin" && !form.adminCode.trim()) {
+      setFieldErrors({ adminCode: "Admin code is required." });
+      return;
+    }
+
     setLoading(true);
     try {
       const endpoint = role === "admin" ? "/api/auth/admin/signup" : "/api/auth/user/signup";
@@ -56,6 +63,7 @@ export default function SignupPage() {
               lastName: form.lastName,
               email: form.email,
               password: form.password,
+              adminCode: form.adminCode.trim().toUpperCase(),
             }
           : {
               firstName: form.firstName,
@@ -97,7 +105,11 @@ export default function SignupPage() {
       const signinEndpoint = role === "admin" ? "/api/auth/admin/signin" : "/api/auth/user/signin";
       const signinPayload =
         role === "admin"
-          ? { email: form.email, password: form.password }
+          ? {
+              email: form.email,
+              password: form.password,
+              adminCode: form.adminCode.trim().toUpperCase(),
+            }
           : {
               email: form.email,
               password: form.password,
@@ -222,6 +234,22 @@ export default function SignupPage() {
                 className="rounded-xl border border-orange-100 px-4 py-2.5 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
               />
               {fieldErrors.studentId && <span className="text-xs text-red-500 mt-1">{fieldErrors.studentId}</span>}
+            </div>
+          )}
+
+          {role === "admin" && (
+            <div className="md:col-span-2 flex flex-col">
+              <label className="text-sm font-medium text-gray-600 mb-1">Admin Code</label>
+              <input
+                type="text"
+                name="adminCode"
+                placeholder="ADM7"
+                value={form.adminCode}
+                onChange={handleChange}
+                required
+                className="rounded-xl border border-orange-100 px-4 py-2.5 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
+              />
+              {fieldErrors.adminCode && <span className="text-xs text-red-500 mt-1">{fieldErrors.adminCode}</span>}
             </div>
           )}
 

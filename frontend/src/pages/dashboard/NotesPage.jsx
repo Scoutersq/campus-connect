@@ -1,4 +1,5 @@
 import React from "react";
+import { useOutletContext } from "react-router-dom";
 import {
   FiUpload,
   FiDownload,
@@ -7,6 +8,7 @@ import {
   FiFileText,
   FiSearch,
   FiAlertCircle,
+  FiTrash2,
 } from "react-icons/fi";
 import { buildApiUrl, fetchResource } from "../../utils/fetchResource";
 
@@ -50,6 +52,9 @@ const formatFileSize = (bytes) => {
 };
 
 export default function NotesPage() {
+  const outletContext = useOutletContext?.() ?? {};
+  const { role = "user" } = outletContext;
+  const isAdmin = role === "admin";
   const [notes, setNotes] = React.useState(EMPTY_NOTES);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -60,6 +65,7 @@ export default function NotesPage() {
   const [formValues, setFormValues] = React.useState({ title: "", subject: "", description: "" });
   const [selectedFile, setSelectedFile] = React.useState(null);
   const fileInputRef = React.useRef(null);
+  const [deleteState, setDeleteState] = React.useState({ id: null, error: "" });
 
   React.useEffect(() => {
     let ignore = false;
@@ -192,6 +198,38 @@ export default function NotesPage() {
     );
   }, []);
 
+  const handleDeleteNote = React.useCallback(
+    async (noteId) => {
+      if (!noteId) return;
+      const confirmed = window.confirm("Delete this note? This action cannot be undone.");
+      if (!confirmed) {
+        return;
+      }
+
+      setDeleteState({ id: noteId, error: "" });
+
+      try {
+        const response = await fetch(buildApiUrl(`/api/notes/${noteId}`), {
+          method: "DELETE",
+          credentials: "include",
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload?.message || "Failed to delete note.");
+        }
+
+        setNotes((prev) => prev.filter((item) => item._id !== noteId));
+        setSelectedNote((prev) => (prev && prev._id === noteId ? null : prev));
+        setDeleteState({ id: null, error: "" });
+      } catch (err) {
+        console.error("Note delete error", err);
+        setDeleteState({ id: null, error: err.message || "Unable to delete note." });
+      }
+    },
+    []
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -228,6 +266,12 @@ export default function NotesPage() {
             <span>{error}</span>
           </div>
         )}
+        {!error && deleteState.error && (
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            <FiAlertCircle className="text-base" />
+            <span>{deleteState.error}</span>
+          </div>
+        )}
       </div>
 
       <section>
@@ -262,9 +306,21 @@ export default function NotesPage() {
                     <h3 className="text-lg font-semibold text-gray-900">{note.title}</h3>
                     <p className="text-sm text-gray-500">{note.description}</p>
                   </div>
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">
-                    {toDownloadLabel(note.downloads)}
-                  </span>
+                  <div className="flex items-start gap-2">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNote(note._id)}
+                        disabled={deleteState.id === note._id}
+                        className="inline-flex items-center justify-center rounded-full border border-red-200 bg-white p-2 text-sm font-semibold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <FiTrash2 className="text-base" />
+                      </button>
+                    )}
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">
+                      {toDownloadLabel(note.downloads)}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-6 flex flex-1 flex-col justify-end gap-3 text-sm text-gray-500">
@@ -447,6 +503,17 @@ export default function NotesPage() {
                   </li>
                 </ul>
                 <div className="flex gap-3">
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteNote(selectedNote._id)}
+                      disabled={deleteState.id === selectedNote._id}
+                      className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <FiTrash2 className="text-base" />
+                      {deleteState.id === selectedNote._id ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
                   <a
                     href={buildApiUrl(selectedNote.downloadUrl || `/api/notes/${selectedNote._id}/download`)}
                     target="_blank"

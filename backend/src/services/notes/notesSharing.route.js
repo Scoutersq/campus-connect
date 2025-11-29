@@ -6,6 +6,7 @@ const fs = require("fs");
 const noteSharingRouter = Router();
 const { noteSharingModel } = require("../../models/notesSharing.model.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
+const { userOrAdminMiddleware } = require("../../middlewares/userOrAdmin.middleware.js");
 const { validateParams } = require("../../utils/validation.js");
 const { verifySessionToken, SessionError } = require("../../utils/session.js");
 
@@ -153,7 +154,7 @@ noteSharingRouter.post("/upload", userMiddleware, uploadSingleNote, async (req, 
   }
 });
 
-noteSharingRouter.get("/all", userMiddleware, async (_req, res) => {
+noteSharingRouter.get("/all", userOrAdminMiddleware, async (_req, res) => {
   try {
     const notes = await noteSharingModel
       .find({})
@@ -215,7 +216,7 @@ const authorizeNoteOwnerOrAdmin = async (req, res, next) => {
 
 noteSharingRouter.get(
   "/:noteId",
-  userMiddleware,
+  userOrAdminMiddleware,
   validateParams(noteIdParamsSchema),
   async (req, res) => {
     try {
@@ -245,7 +246,7 @@ noteSharingRouter.get(
 
 noteSharingRouter.get(
   "/:noteId/preview",
-  userMiddleware,
+  userOrAdminMiddleware,
   validateParams(noteIdParamsSchema),
   async (req, res) => {
     try {
@@ -298,7 +299,7 @@ noteSharingRouter.get(
 
 noteSharingRouter.get(
   "/:noteId/download",
-  userMiddleware,
+  userOrAdminMiddleware,
   validateParams(noteIdParamsSchema),
   async (req, res) => {
     try {

@@ -4,6 +4,7 @@ const { emergencyAlertModel } = require("../../models/emergencyAlert.model.js");
 const { notificationModel } = require("../../models/notifications.model.js");
 const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
+const { userOrAdminMiddleware } = require("../../middlewares/userOrAdmin.middleware.js");
 const { validateBody, validateQuery, validateParams } = require("../../utils/validation.js");
 
 const emergencyRouter = Router();
@@ -167,7 +168,7 @@ emergencyRouter.get(
 
 emergencyRouter.get(
   "/active",
-  userMiddleware,
+  userOrAdminMiddleware,
   async (req, res) => {
     try {
       await markExpiredAlerts();
@@ -181,11 +182,12 @@ emergencyRouter.get(
         .sort({ severity: -1, createdAt: -1 })
         .lean();
 
+      const currentUserId = req.role === "user" ? req.userID : null;
       const response = alerts.map((alert) => ({
         ...alert,
-        acknowledged: alert.acknowledgedBy?.some(
-          (id) => id.toString() === req.userID
-        ),
+        acknowledged: currentUserId
+          ? alert.acknowledgedBy?.some((id) => id.toString() === currentUserId)
+          : false,
       }));
 
       return res.status(200).json({ success: true, data: response });

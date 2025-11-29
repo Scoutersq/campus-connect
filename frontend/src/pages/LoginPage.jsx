@@ -4,16 +4,17 @@ import { buildApiUrl } from "../utils/fetchResource";
 
 export default function LoginPage() {
   const [role, setRole] = useState("user");
-  const [form, setForm] = useState({ email: "", password: "", studentId: "" });
+  const [form, setForm] = useState({ email: "", password: "", studentId: "", adminCode: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    const shouldUppercase = name === "studentId" || name === "adminCode";
     setForm((prev) => ({
       ...prev,
-      [name]: name === "studentId" ? value.toUpperCase() : value,
+      [name]: shouldUppercase ? value.toUpperCase() : value,
     }));
   };
 
@@ -31,12 +32,21 @@ export default function LoginPage() {
       return;
     }
 
+    if (role === "admin" && !form.adminCode.trim()) {
+      setError("Admin code is required.");
+      return;
+    }
+
     setLoading(true);
     try {
       const endpoint = role === "admin" ? "/api/auth/admin/signin" : "/api/auth/user/signin";
       const payload =
         role === "admin"
-          ? { email: form.email, password: form.password }
+          ? {
+              email: form.email,
+              password: form.password,
+              adminCode: form.adminCode.trim().toUpperCase(),
+            }
           : {
               email: form.email,
               password: form.password,
@@ -127,6 +137,21 @@ export default function LoginPage() {
                 name="studentId"
                 placeholder="ST5"
                 value={form.studentId}
+                onChange={handleChange}
+                required
+                className="w-full rounded-xl border border-orange-100 px-4 py-2.5 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
+              />
+            </div>
+          )}
+
+          {role === "admin" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Admin Code</label>
+              <input
+                type="text"
+                name="adminCode"
+                placeholder="ADM4"
+                value={form.adminCode}
                 onChange={handleChange}
                 required
                 className="w-full rounded-xl border border-orange-100 px-4 py-2.5 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"

@@ -10,9 +10,11 @@ import {
   FiFileText,
   FiUsers,
   FiUser,
+  FiSettings,
+  FiClipboard,
 } from "react-icons/fi";
 
-const SIDEBAR_SECTIONS = [
+const USER_NAVIGATION = [
   {
     title: "Main Menu",
     items: [
@@ -32,31 +34,69 @@ const SIDEBAR_SECTIONS = [
   },
 ];
 
-export default function DashboardLayout() {
-  const [role, setRole] = React.useState("user");
+const ADMIN_NAVIGATION = [
+  {
+    title: "Administration",
+    items: [
+      { label: "Overview", to: "/dashboard", icon: FiGrid, end: true },
+      { label: "Users", to: "/dashboard/users", icon: FiUsers },
+      { label: "Lost & Found Control", to: "/dashboard/manage/lost-found", icon: FiMapPin },
+      { label: "Events Manager", to: "/dashboard/manage/events", icon: FiCalendar },
+      { label: "Announcements Manager", to: "/dashboard/manage/announcements", icon: FiBell },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      { label: "Emergency Alerts", to: "/dashboard/emergency-alerts", icon: FiShield },
+      { label: "Notes Library", to: "/dashboard/notes", icon: FiFileText },
+      { label: "Discussions", to: "/dashboard/discussions", icon: FiMessageCircle },
+      { label: "Resources", to: "/dashboard/skills", icon: FiClipboard },
+    ],
+  },
+  {
+    title: "Account",
+    items: [{ label: "Profile", to: "/dashboard/profile", icon: FiUser }],
+  },
+];
+
+export default function DashboardLayout({ role: incomingRole = "user" }) {
   const navigate = useNavigate();
+  const [role, setRole] = React.useState(incomingRole);
 
   React.useEffect(() => {
-    const storedRole = localStorage.getItem("cc_role");
-    setRole(storedRole || "user");
-  }, []);
+    if (incomingRole) {
+      setRole(incomingRole);
+    } else {
+      const storedRole = localStorage.getItem("cc_role") || "user";
+      setRole(storedRole);
+    }
+  }, [incomingRole]);
 
   const handleLogout = () => {
     localStorage.removeItem("cc_role");
     navigate("/");
   };
 
+  const sections = role === "admin" ? ADMIN_NAVIGATION : USER_NAVIGATION;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
         <aside className="fixed inset-y-0 left-0 w-64 border-r border-orange-50 bg-white/95 shadow-sm">
           <div className="flex h-20 items-center justify-center border-b border-orange-50">
-            <span className="text-xl font-bold tracking-tight text-orange-500">
-              Campus Connect
-            </span>
+            <div className="text-center">
+              <span className="block text-xl font-bold tracking-tight text-orange-500">
+                Campus Connect
+              </span>
+              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-500">
+                <FiSettings className="text-sm" />
+                {role === "admin" ? "Admin" : "Student"}
+              </span>
+            </div>
           </div>
           <nav className="flex-1 overflow-y-auto">
-            {SIDEBAR_SECTIONS.map((section) => (
+            {sections.map((section) => (
               <div key={section.title} className="px-4 py-5">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
                   {section.title}

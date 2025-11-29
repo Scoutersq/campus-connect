@@ -1,11 +1,12 @@
 const app = require("./src/app.js");
 const { connectDB } = require("./src/db/db.js");
 const { ensureStudentIds } = require("./src/utils/studentIds.js");
+const { ensureAdminCodes } = require("./src/utils/adminCodes.js");
 
 async function startServer() {
     try {
         await connectDB();
-        await ensureStudentIds();
+        await Promise.all([ensureStudentIds(), ensureAdminCodes()]);
 
         app.listen(3000, () => {
             console.log("Server is running on port 3000");

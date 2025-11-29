@@ -17,6 +17,14 @@ const adminSchema = new Schema({
         maxlength:80,
         required:true
     },
+    adminCode: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        uppercase: true,
+        match: /^ADM([1-9]|1[0-9]|20)$/
+    },
     firstName:{
         type:String,
         minlength:3,
