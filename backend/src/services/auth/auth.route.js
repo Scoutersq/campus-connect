@@ -3,18 +3,12 @@ const {
   verifySessionToken,
   clearActiveSession,
   extractTokenFromRequest,
+  getBaseCookieOptions,
 } = require("../../utils/session.js");
 
 const authRouter = Router();
 
-const isProduction = process.env.NODE_ENV === "production";
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
-  path: "/",
-};
+const cookieOptions = getBaseCookieOptions();
 
 authRouter.post("/logout", async (req, res) => {
   const token = extractTokenFromRequest(req);

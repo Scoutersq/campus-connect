@@ -5,20 +5,19 @@ const { randomUUID } = require("crypto");
 const { z } = require("zod");
 const { userModel } = require("../../models/user.model.js");
 const { validateBody } = require("../../utils/validation.js");
-const { SESSION_TTL_MS, clearActiveSession } = require("../../utils/session.js");
+const {
+  SESSION_TTL_MS,
+  clearActiveSession,
+  getBaseCookieOptions,
+} = require("../../utils/session.js");
 const { studentIdModel } = require("../../models/studentId.model.js");
 const { normalizeStudentId, allowedStudentIds } = require("../../utils/studentIds.js");
 
 const userRouter = Router();
 
-const isProduction = process.env.NODE_ENV === "production";
-
 const cookieOptions = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: "/",
+  ...getBaseCookieOptions(),
+  maxAge: SESSION_TTL_MS,
 };
 
 const studentIdSchema = z

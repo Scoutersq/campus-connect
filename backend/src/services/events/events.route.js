@@ -7,7 +7,7 @@ const { notificationModel } = require("../../models/notifications.model.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const { userModel } = require("../../models/user.model.js");
 const { validateBody } = require("../../utils/validation.js");
-const { resolveUserIdFromToken } = require("../../utils/session.js");
+const { resolveUserIdFromToken, extractTokenFromRequest } = require("../../utils/session.js");
 
 const createEventSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -95,7 +95,8 @@ eventRouter.post(
 
 eventRouter.get("/", async (req, res) => {
   try {
-    const currentUserId = await resolveUserIdFromToken(req.cookies?.token);
+    const token = extractTokenFromRequest(req);
+    const currentUserId = await resolveUserIdFromToken(token);
 
     const events = await eventModel.find({}).sort({ date: 1 }).lean();
 

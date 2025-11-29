@@ -17,6 +17,50 @@ const roleModelMap = {
   admin: adminModel,
 };
 
+function parseOriginsFromEnv(value) {
+  if (!value) {
+    return [];
+  }
+
+  return String(value)
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function shouldUseSecureCookies() {
+  if (process.env.COOKIE_SECURE === "true") {
+    return true;
+  }
+
+  if (process.env.COOKIE_SECURE === "false") {
+    return false;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return true;
+  }
+
+  const httpsOrigins = [
+    ...parseOriginsFromEnv(process.env.FRONTEND_URL),
+    ...parseOriginsFromEnv(process.env.CLIENT_ORIGIN),
+    ...parseOriginsFromEnv(process.env.CLIENT_ORIGINS),
+  ];
+
+  return httpsOrigins.some((origin) => /^https:\/\//i.test(origin));
+}
+
+function getBaseCookieOptions() {
+  const secure = shouldUseSecureCookies();
+
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? "none" : "lax",
+    path: "/",
+  };
+}
+
 function extractTokenFromRequest(req) {
   const cookieToken = req?.cookies?.token;
   if (cookieToken) {
@@ -122,4 +166,5 @@ module.exports = {
   clearActiveSession,
   resolveUserIdFromToken,
   extractTokenFromRequest,
+  getBaseCookieOptions,
 };

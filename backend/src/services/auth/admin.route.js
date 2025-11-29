@@ -5,20 +5,19 @@ const jwt = require("jsonwebtoken");
 const { randomUUID } = require("crypto");
 const { z } = require("zod");
 const { validateBody } = require("../../utils/validation.js");
-const { SESSION_TTL_MS, clearActiveSession } = require("../../utils/session.js");
+const {
+  SESSION_TTL_MS,
+  clearActiveSession,
+  getBaseCookieOptions,
+} = require("../../utils/session.js");
 const { adminCodeModel } = require("../../models/adminCode.model.js");
 const { normalizeAdminCode, allowedAdminCodes } = require("../../utils/adminCodes.js");
 
 const adminRouter = Router();
 
-const isProduction = process.env.NODE_ENV === "production";
-
 const cookieOptions = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  path: "/",
+  ...getBaseCookieOptions(),
+  maxAge: SESSION_TTL_MS,
 };
 
 const adminCodeSchema = z

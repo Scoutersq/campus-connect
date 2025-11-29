@@ -43,18 +43,28 @@ app.use(
 
 const normalizeOrigin = (value = "") => value.replace(/\/?$/, "").trim();
 
+const collectOrigins = (...sources) =>
+	sources
+		.filter((value) => typeof value === "string" && value.length > 0)
+		.flatMap((value) => value.split(","))
+		.map(normalizeOrigin)
+		.filter(Boolean);
+
 const defaultOrigins = [
 	"http://localhost:5173",
 	"http://127.0.0.1:5173",
 	"http://localhost:4173",
-].map(normalizeOrigin);
+];
 
-const envOrigins = (process.env.CLIENT_ORIGIN || "")
-	.split(",")
-	.map(normalizeOrigin)
-	.filter(Boolean);
+const envOrigins = collectOrigins(
+	process.env.CLIENT_ORIGIN,
+	process.env.CLIENT_ORIGINS,
+	process.env.FRONTEND_URL,
+	process.env.FRONTEND_URLS,
+	process.env.ALLOWED_ORIGINS
+);
 
-const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+const allowedOrigins = [...new Set([...defaultOrigins.map(normalizeOrigin), ...envOrigins])];
 
 app.use(
 	cors({
