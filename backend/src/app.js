@@ -84,6 +84,10 @@ app.use((req, res, next) => {
 	next();
 });
 
+app.get("/healthz", (req, res) => {
+	res.status(200).json({ success: true });
+});
+
 const authLimiter = rateLimit({
 	windowMs: 60 * 1000,
 	max: 15,

@@ -5,8 +5,15 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
+import { buildApiUrl } from "./utils/fetchResource";
 
 export default function App() {
+  React.useEffect(() => {
+    const controller = new AbortController();
+    fetch(buildApiUrl("/healthz"), { signal: controller.signal, credentials: "include" }).catch(() => {});
+    return () => controller.abort();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
