@@ -1,5 +1,4 @@
 const { Router } = require("express");
-const jwt = require("jsonwebtoken");
 const { z } = require("zod");
 const multer = require("multer");
 const path = require("path");
@@ -8,6 +7,7 @@ const noteSharingRouter = Router();
 const { noteSharingModel } = require("../../models/notesSharing.model.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const { validateParams } = require("../../utils/validation.js");
+const { verifySessionToken, SessionError } = require("../../utils/session.js");
 
 const uploadSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -188,53 +188,28 @@ const resolveNoteFilePath = (note) => {
   return path.join(notesUploadDir, note.storageName);
 };
 
-const authorizeNoteOwnerOrAdmin = (req, res, next) => {
+const authorizeNoteOwnerOrAdmin = async (req, res, next) => {
   try {
     const token = req.cookies?.token;
+    const session = await verifySessionToken(token);
 
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required.",
-      });
-    }
-
-    let decoded;
-
-    try {
-      decoded = jwt.verify(token, process.env.JWT_ADMIN_SECRET);
-    } catch (adminError) {
-      try {
-        decoded = jwt.verify(token, process.env.JWT_USER_SECRET);
-      } catch (userError) {
-        return res.status(403).json({
-          success: false,
-          message: "Invalid or expired token.",
-        });
-      }
-    }
-
-    if (decoded.role === "admin") {
+    if (session.role === "admin") {
       req.role = "admin";
-      req.adminID = decoded.id;
+      req.adminID = session.id;
       return next();
     }
 
-    if (decoded.role === "user") {
+    if (session.role === "user") {
       req.role = "user";
-      req.userID = decoded.id;
+      req.userID = session.id;
       return next();
     }
 
-    return res.status(403).json({
-      success: false,
-      message: "Invalid or expired token.",
-    });
+    return res.status(403).json({ success: false, message: "Access denied." });
   } catch (error) {
-    return res.status(403).json({
-      success: false,
-      message: "Invalid or expired token.",
-    });
+    const statusCode = error instanceof SessionError ? error.statusCode : 403;
+    const message = error instanceof SessionError ? error.message : "Invalid or expired token.";
+    return res.status(statusCode).json({ success: false, message });
   }
 };
 

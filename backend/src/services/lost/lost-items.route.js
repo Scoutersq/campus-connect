@@ -1,11 +1,11 @@
 const { Router } = require("express");
-const jwt = require("jsonwebtoken");
 const { z } = require("zod");
 const { lostModel } = require("../../models/lost.model.js");
 const lostRouter = Router();
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
 const { validateBody, validateParams } = require("../../utils/validation.js");
+const { verifySessionToken, SessionError } = require("../../utils/session.js");
 
 const lostReportSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -28,53 +28,31 @@ const itemIdParamsSchema = z.object({
 });
 
 // Allow access when requester is the reporter (user) or an admin.
-const authorizeReporterOrAdmin = (req, res, next) => {
+const authorizeReporterOrAdmin = async (req, res, next) => {
   try {
     const token = req.cookies?.token;
+    const session = await verifySessionToken(token);
 
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required.",
-      });
-    }
-
-    let decoded;
-
-    try {
-      decoded = jwt.verify(token, process.env.JWT_ADMIN_SECRET);
-    } catch (adminError) {
-      try {
-        decoded = jwt.verify(token, process.env.JWT_USER_SECRET);
-      } catch (userError) {
-        return res.status(403).json({
-          success: false,
-          message: "Invalid or expired token.",
-        });
-      }
-    }
-
-    if (decoded.role === "admin") {
+    if (session.role === "admin") {
       req.role = "admin";
-      req.adminID = decoded.id;
+      req.adminID = session.id;
       return next();
     }
 
-    if (decoded.role === "user") {
+    if (session.role === "user") {
       req.role = "user";
-      req.userID = decoded.id;
+      req.userID = session.id;
       return next();
     }
 
     return res.status(403).json({
       success: false,
-      message: "Invalid or expired token.",
+      message: "Access denied.",
     });
   } catch (error) {
-    return res.status(403).json({
-      success: false,
-      message: "Invalid or expired token.",
-    });
+    const statusCode = error instanceof SessionError ? error.statusCode : 403;
+    const message = error instanceof SessionError ? error.message : "Invalid or expired token.";
+    return res.status(statusCode).json({ success: false, message });
   }
 };
 

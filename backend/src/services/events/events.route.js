@@ -7,7 +7,7 @@ const { notificationModel } = require("../../models/notifications.model.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const { userModel } = require("../../models/user.model.js");
 const { validateBody } = require("../../utils/validation.js");
-const jwt = require("jsonwebtoken");
+const { resolveUserIdFromToken } = require("../../utils/session.js");
 
 const createEventSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -95,18 +95,7 @@ eventRouter.post(
 
 eventRouter.get("/", async (req, res) => {
   try {
-    let currentUserId = null;
-    const token = req.cookies?.token;
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_USER_SECRET);
-        if (decoded?.role === "user") {
-          currentUserId = decoded.id;
-        }
-      } catch (err) {
-        // Ignore invalid tokens for public access
-      }
-    }
+    const currentUserId = await resolveUserIdFromToken(req.cookies?.token);
 
     const events = await eventModel.find({}).sort({ date: 1 }).lean();
 

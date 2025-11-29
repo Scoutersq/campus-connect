@@ -1,9 +1,11 @@
 const { Router } = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { randomUUID } = require("crypto");
 const { z } = require("zod");
 const { userModel } = require("../../models/user.model.js");
 const { validateBody } = require("../../utils/validation.js");
+const { SESSION_TTL_MS } = require("../../utils/session.js");
 
 const userRouter = Router();
 
@@ -76,14 +78,33 @@ userRouter.post("/signin", validateBody(signinSchema), async (req, res) => {
       return res.status(403).json({ success: false, message: "Invalid credentials." });
     }
 
+    const hasActiveSession = Boolean(
+      user.activeSessionId && (!user.sessionExpiresAt || user.sessionExpiresAt > new Date())
+    );
+
+    if (hasActiveSession) {
+      return res.status(409).json({
+        success: false,
+        message: "This account is already signed in on another device. Please sign out there first.",
+      });
+    }
+
+    const sessionId = randomUUID();
+    const sessionExpiresAt = new Date(Date.now() + SESSION_TTL_MS);
+
     const token = jwt.sign(
       {
         id: user._id,
         role: "user",
+        sid: sessionId,
       },
       process.env.JWT_USER_SECRET,
       { expiresIn: "7d" }
     );
+
+    user.activeSessionId = sessionId;
+    user.sessionExpiresAt = sessionExpiresAt;
+    await user.save({ validateBeforeSave: false });
 
     res.cookie("token", token, cookieOptions);
 

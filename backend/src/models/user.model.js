@@ -34,6 +34,16 @@ const userSchema = new Schema({
         type: String,
         trim: true,
         maxlength: 2048
+    },
+    activeSessionId: {
+        type: String,
+        default: null,
+        index: true,
+    },
+    sessionExpiresAt: {
+        type: Date,
+        default: null,
+        index: true,
     }
 })
 

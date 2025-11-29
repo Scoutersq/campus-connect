@@ -1,24 +1,17 @@
-const jwt = require("jsonwebtoken");
+const { verifySessionToken, SessionError } = require("../utils/session.js");
 
-function userMiddleware(req, res, next) {
+async function userMiddleware(req, res, next) {
   try {
     const token = req.cookies?.token;
-
-    if (!token) {
-      return res.status(401).json({ success: false, message: "Authentication required." });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_USER_SECRET);
-
-    if (decoded.role !== "user") {
-      return res.status(403).json({ success: false, message: "Access denied." });
-    }
-
-    req.userID = decoded.id;
-    req.role = decoded.role;
+    const session = await verifySessionToken(token, { expectedRole: "user" });
+    req.userID = session.id;
+    req.role = "user";
+    req.sessionId = session.sessionId;
     next();
   } catch (error) {
-    return res.status(403).json({ success: false, message: "Invalid or expired token." });
+    const statusCode = error instanceof SessionError ? error.statusCode : 403;
+    const message = error instanceof SessionError ? error.message : "Invalid or expired token.";
+    return res.status(statusCode).json({ success: false, message });
   }
 }
 

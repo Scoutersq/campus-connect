@@ -2,8 +2,10 @@ const { Router } = require("express");
 const { adminModel } = require("../../models/admin.model.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { randomUUID } = require("crypto");
 const { z } = require("zod");
 const { validateBody } = require("../../utils/validation.js");
+const { SESSION_TTL_MS } = require("../../utils/session.js");
 
 const adminRouter = Router();
 
@@ -73,11 +75,29 @@ adminRouter.post("/signin", validateBody(adminSigninSchema), async (req, res) =>
       return res.status(403).json({ success: false, message: "Invalid credentials." });
     }
 
+    const hasActiveSession = Boolean(
+      user.activeSessionId && (!user.sessionExpiresAt || user.sessionExpiresAt > new Date())
+    );
+
+    if (hasActiveSession) {
+      return res.status(409).json({
+        success: false,
+        message: "You are already signed in elsewhere. Please sign out before signing in again.",
+      });
+    }
+
+    const sessionId = randomUUID();
+    const sessionExpiresAt = new Date(Date.now() + SESSION_TTL_MS);
+
     const token = jwt.sign(
-      { id: user._id, role: "admin" },
+      { id: user._id, role: "admin", sid: sessionId },
       process.env.JWT_ADMIN_SECRET,
       { expiresIn: "7d" }
     );
+
+    user.activeSessionId = sessionId;
+    user.sessionExpiresAt = sessionExpiresAt;
+    await user.save({ validateBeforeSave: false });
 
     res.cookie("token", token, cookieOptions);
 

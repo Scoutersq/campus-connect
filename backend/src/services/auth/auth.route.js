@@ -1,4 +1,5 @@
 const { Router } = require("express");
+const { verifySessionToken, clearActiveSession } = require("../../utils/session.js");
 
 const authRouter = Router();
 
@@ -11,13 +12,19 @@ const cookieOptions = {
   path: "/",
 };
 
-authRouter.post("/logout", (req, res) => {
-  if (req.cookies?.token) {
-    res.clearCookie("token", cookieOptions);
-  } else {
-    // Ensure the cookie is cleared even if the client deleted it manually.
-    res.clearCookie("token", cookieOptions);
+authRouter.post("/logout", async (req, res) => {
+  const token = req.cookies?.token;
+
+  if (token) {
+    try {
+      const session = await verifySessionToken(token);
+      await clearActiveSession(session);
+    } catch (_error) {
+      // Ignore errors during logout; proceed to clear cookie.
+    }
   }
+
+  res.clearCookie("token", cookieOptions);
 
   return res.status(200).json({
     success: true,

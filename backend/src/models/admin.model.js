@@ -30,6 +30,16 @@ const adminSchema = new Schema({
         maxlength:10,
         required:true,
         trim:true
+    },
+    activeSessionId: {
+        type: String,
+        default: null,
+        index: true,
+    },
+    sessionExpiresAt: {
+        type: Date,
+        default: null,
+        index: true,
     }
 })
 const adminModel = mongoose.model("Admin", adminSchema, "admins");
