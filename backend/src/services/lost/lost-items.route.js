@@ -5,7 +5,7 @@ const lostRouter = Router();
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
 const { validateBody, validateParams } = require("../../utils/validation.js");
-const { verifySessionToken, SessionError } = require("../../utils/session.js");
+const { verifySessionToken, SessionError, extractTokenFromRequest } = require("../../utils/session.js");
 
 const lostReportSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -30,7 +30,7 @@ const itemIdParamsSchema = z.object({
 // Allow access when requester is the reporter (user) or an admin.
 const authorizeReporterOrAdmin = async (req, res, next) => {
   try {
-    const token = req.cookies?.token;
+    const token = extractTokenFromRequest(req);
     const session = await verifySessionToken(token);
 
     if (session.role === "admin") {

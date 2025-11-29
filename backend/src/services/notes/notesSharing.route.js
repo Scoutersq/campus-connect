@@ -8,7 +8,7 @@ const { noteSharingModel } = require("../../models/notesSharing.model.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const { userOrAdminMiddleware } = require("../../middlewares/userOrAdmin.middleware.js");
 const { validateParams } = require("../../utils/validation.js");
-const { verifySessionToken, SessionError } = require("../../utils/session.js");
+const { verifySessionToken, SessionError, extractTokenFromRequest } = require("../../utils/session.js");
 
 const uploadSchema = z.object({
   title: z.string().trim().min(3).max(120),
@@ -191,7 +191,7 @@ const resolveNoteFilePath = (note) => {
 
 const authorizeNoteOwnerOrAdmin = async (req, res, next) => {
   try {
-    const token = req.cookies?.token;
+    const token = extractTokenFromRequest(req);
     const session = await verifySessionToken(token);
 
     if (session.role === "admin") {

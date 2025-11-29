@@ -17,6 +17,20 @@ const roleModelMap = {
   admin: adminModel,
 };
 
+function extractTokenFromRequest(req) {
+  const cookieToken = req?.cookies?.token;
+  if (cookieToken) {
+    return cookieToken;
+  }
+
+  const authHeader = req?.headers?.authorization || req?.headers?.Authorization;
+  if (typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")) {
+    return authHeader.slice(7).trim();
+  }
+
+  return null;
+}
+
 async function verifySessionToken(token, { expectedRole } = {}) {
   if (!token) {
     throw new SessionError(401, "Authentication required.");
@@ -107,4 +121,5 @@ module.exports = {
   SessionError,
   clearActiveSession,
   resolveUserIdFromToken,
+  extractTokenFromRequest,
 };

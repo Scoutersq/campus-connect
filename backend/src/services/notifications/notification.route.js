@@ -4,6 +4,7 @@ const { notificationModel } = require("../../models/notifications.model.js");
 const { adminMiddleware } = require("../../middlewares/admin.middleware.js");
 const { userMiddleware } = require("../../middlewares/user.middleware.js");
 const { validateBody, validateParams } = require("../../utils/validation.js");
+const { extractTokenFromRequest } = require("../../utils/session.js");
 const jwt = require("jsonwebtoken");
 const notificationRouter = Router();
 
@@ -95,7 +96,7 @@ notificationRouter.post(
 notificationRouter.get("/", async (req, res) => {
   try {
     let currentUserId = null;
-    const token = req.cookies?.token;
+    const token = extractTokenFromRequest(req);
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_USER_SECRET);

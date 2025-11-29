@@ -1,8 +1,8 @@
-const { verifySessionToken, SessionError } = require("../utils/session.js");
+const { verifySessionToken, SessionError, extractTokenFromRequest } = require("../utils/session.js");
 
 async function adminMiddleware(req, res, next) {
   try {
-    const token = req.cookies?.token;
+    const token = extractTokenFromRequest(req);
     const session = await verifySessionToken(token, { expectedRole: "admin" });
     req.adminID = session.id;
     req.role = "admin";
