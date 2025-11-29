@@ -30,6 +30,14 @@ const userSchema = new Schema({
         maxlength:10,
         trim:true
     },
+    studentId: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        uppercase: true,
+        match: /^ST([1-9]|1[0-9]|20)$/
+    },
     avatarUrl: {
         type: String,
         trim: true,
