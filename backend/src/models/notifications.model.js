@@ -69,6 +69,10 @@ const notificationSchema = new Schema({
     }
 });
 
+notificationSchema.index({ createdAt: -1 });
+notificationSchema.index({ status: 1, createdAt: -1 });
+notificationSchema.index({ category: 1, createdAt: -1 });
+
 const notificationModel = mongoose.model("notifications",notificationSchema);
 
 module.exports = {

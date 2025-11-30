@@ -11,7 +11,7 @@ const authRouter = Router();
 const cookieOptions = getBaseCookieOptions();
 
 authRouter.post("/logout", async (req, res) => {
-  const token = extractTokenFromRequest(req);
+  const token = extractTokenFromRequest(req, req.headers?.["x-portal-role"]);
 
   if (token) {
     try {
@@ -22,7 +22,9 @@ authRouter.post("/logout", async (req, res) => {
     }
   }
 
-  res.clearCookie("token", cookieOptions);
+  ["token", "user_token", "admin_token"].forEach((name) => {
+    res.clearCookie(name, cookieOptions);
+  });
 
   return res.status(200).json({
     success: true,

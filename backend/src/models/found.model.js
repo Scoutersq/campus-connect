@@ -52,6 +52,10 @@ const foundSchema = new Schema({
   },
 })
 
+foundSchema.index({ createdAt: -1 });
+foundSchema.index({ status: 1, createdAt: -1 });
+foundSchema.index({ reportedBy: 1, createdAt: -1 });
+
 const foundModel = mongoose.model("found-items",foundSchema);
 
 module.exports = {

@@ -96,7 +96,7 @@ notificationRouter.post(
 notificationRouter.get("/", async (req, res) => {
   try {
     let currentUserId = null;
-    const token = extractTokenFromRequest(req);
+    const token = extractTokenFromRequest(req, "user");
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_USER_SECRET);

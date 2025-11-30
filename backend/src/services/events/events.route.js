@@ -95,7 +95,7 @@ eventRouter.post(
 
 eventRouter.get("/", async (req, res) => {
   try {
-    const token = extractTokenFromRequest(req);
+    const token = extractTokenFromRequest(req, "user");
     const currentUserId = await resolveUserIdFromToken(token);
 
     const events = await eventModel.find({}).sort({ date: 1 }).lean();

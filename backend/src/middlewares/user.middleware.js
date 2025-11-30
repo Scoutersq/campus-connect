@@ -2,7 +2,7 @@ const { verifySessionToken, SessionError, extractTokenFromRequest } = require(".
 
 async function userMiddleware(req, res, next) {
   try {
-    const token = extractTokenFromRequest(req);
+    const token = extractTokenFromRequest(req, "user");
     const session = await verifySessionToken(token, { expectedRole: "user" });
     req.userID = session.id;
     req.role = "user";

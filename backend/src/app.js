@@ -66,6 +66,15 @@ const envOrigins = collectOrigins(
 
 const allowedOrigins = [...new Set([...defaultOrigins.map(normalizeOrigin), ...envOrigins])];
 
+const allowedHeaders = [
+	"Content-Type",
+	"Authorization",
+	"X-Requested-With",
+	"Accept",
+	"X-Portal-Role",
+	"X-Auth-Role",
+];
+
 app.use(
 	cors({
 		origin(origin, callback) {
@@ -79,6 +88,7 @@ app.use(
 			return callback(new Error(`Origin ${normalizedOrigin || origin} not allowed by CORS`));
 		},
 		credentials: true,
+		allowedHeaders,
 	})
 );
 

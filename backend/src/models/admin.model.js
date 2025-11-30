@@ -49,7 +49,10 @@ const adminSchema = new Schema({
         default: null,
         index: true,
     }
-})
+}, { timestamps: true });
+
+adminSchema.index({ createdAt: -1 });
+
 const adminModel = mongoose.model("Admin", adminSchema, "admins");
 module.exports = {
     adminModel:adminModel

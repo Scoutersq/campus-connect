@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
+import { getPortalRole } from "../utils/portalRole";
 import OverviewPage from "./dashboard/OverviewPage";
 import LostAndFoundPage from "./dashboard/LostAndFoundPage";
 import EventsPage from "./dashboard/EventsPage";
@@ -18,7 +19,7 @@ export default function DashboardPage() {
   const [role, setRole] = React.useState(null);
 
   React.useEffect(() => {
-    const stored = localStorage.getItem("cc_role");
+    const stored = getPortalRole({ fallbackToLegacy: true });
     setRole(stored === "admin" ? "admin" : "user");
   }, []);
 

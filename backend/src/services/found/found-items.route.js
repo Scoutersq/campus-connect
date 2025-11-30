@@ -29,7 +29,7 @@ const itemIdParamsSchema = z.object({
 // Allow access when requester is the reporter (user) or an admin.
 const authorizeReporterOrAdmin = async (req, res, next) => {
   try {
-    const token = extractTokenFromRequest(req);
+    const token = extractTokenFromRequest(req, req.headers?.["x-portal-role"]);
     const session = await verifySessionToken(token);
 
     if (session.role === "admin") {

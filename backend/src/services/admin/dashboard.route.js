@@ -53,59 +53,53 @@ adminDashboardRouter.get("/overview", adminMiddleware, async (req, res) => {
       recentAnnouncements,
       recentAlerts,
     ] = await Promise.all([
-      userModel.countDocuments({}),
+      userModel.estimatedDocumentCount(),
       userModel.countDocuments(activeSessionFilter),
-      adminModel.countDocuments({}),
+      adminModel.estimatedDocumentCount(),
       adminModel.countDocuments(activeSessionFilter),
-      lostModel.countDocuments({}),
-      lostModel.countDocuments({ status: { $in: ["reported"] } }),
-      foundModel.countDocuments({}),
-      foundModel.countDocuments({ status: { $in: ["reported"] } }),
-      eventModel.countDocuments({}),
+      lostModel.estimatedDocumentCount(),
+      lostModel.countDocuments({ status: "reported" }),
+      foundModel.estimatedDocumentCount(),
+      foundModel.countDocuments({ status: "reported" }),
+      eventModel.estimatedDocumentCount(),
       eventModel.countDocuments({ date: { $gte: now } }),
-      notificationModel.countDocuments({}),
-      noteSharingModel.countDocuments({}),
-      emergencyAlertModel.countDocuments({}),
+      notificationModel.estimatedDocumentCount(),
+      noteSharingModel.estimatedDocumentCount(),
+      emergencyAlertModel.estimatedDocumentCount(),
       emergencyAlertModel.countDocuments({
         isActive: true,
         $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
       }),
       postModelSchema.countDocuments({ isDeleted: { $ne: true } }),
       userModel
-        .find({})
-        .sort({ createdAt: -1 })
+        .find({}, "firstName lastName email studentId createdAt activeSessionId sessionExpiresAt")
+        .sort({ createdAt: -1, _id: -1 })
         .limit(5)
-        .select("firstName lastName email studentId createdAt activeSessionId sessionExpiresAt")
         .lean(),
       lostModel
-        .find({})
-        .sort({ createdAt: -1 })
+        .find({}, "title status createdAt")
+        .sort({ createdAt: -1, _id: -1 })
         .limit(5)
-        .select("title status createdAt")
         .lean(),
       foundModel
-        .find({})
-        .sort({ createdAt: -1 })
+        .find({}, "title status createdAt")
+        .sort({ createdAt: -1, _id: -1 })
         .limit(5)
-        .select("title status createdAt")
         .lean(),
       eventModel
-        .find({})
-        .sort({ createdAt: -1 })
+        .find({}, "title date createdAt venue")
+        .sort({ createdAt: -1, _id: -1 })
         .limit(5)
-        .select("title date createdAt venue")
         .lean(),
       notificationModel
-        .find({})
-        .sort({ createdAt: -1 })
+        .find({}, "title category createdAt")
+        .sort({ createdAt: -1, _id: -1 })
         .limit(5)
-        .select("title category createdAt")
         .lean(),
       emergencyAlertModel
-        .find({})
-        .sort({ createdAt: -1 })
+        .find({}, "title severity createdAt")
+        .sort({ createdAt: -1, _id: -1 })
         .limit(5)
-        .select("title severity createdAt")
         .lean(),
     ]);
 
@@ -173,9 +167,15 @@ adminDashboardRouter.get("/overview", adminMiddleware, async (req, res) => {
 
 adminDashboardRouter.get("/lost-items", adminMiddleware, async (req, res) => {
   try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 200, 25), 500);
+
     const items = await lostModel
-      .find({})
-      .sort({ createdAt: -1 })
+      .find(
+        {},
+        "title description location status dateLost contact image createdAt reportedBy"
+      )
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
       .populate({
         path: "reportedBy",
         select: "firstName lastName email studentId",
@@ -213,9 +213,15 @@ adminDashboardRouter.get("/lost-items", adminMiddleware, async (req, res) => {
 
 adminDashboardRouter.get("/found-items", adminMiddleware, async (req, res) => {
   try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 200, 25), 500);
+
     const items = await foundModel
-      .find({})
-      .sort({ createdAt: -1 })
+      .find(
+        {},
+        "title description locationFound status dateFound contact image createdAt reportedBy"
+      )
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
       .populate({
         path: "reportedBy",
         select: "firstName lastName email studentId",

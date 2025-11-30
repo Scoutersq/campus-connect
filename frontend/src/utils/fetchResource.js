@@ -1,7 +1,7 @@
-const API_BASE = (
-  import.meta.env.VITE_API_URL?.replace(/\/$/, "") ||
-  "https://campus-connect-1-w95c.onrender.com"
-);
+import { API_BASE_URL } from "../api";
+import { getPortalRole } from "./portalRole";
+
+const API_BASE = API_BASE_URL;
 
 export const buildApiUrl = (url) => {
   if (!url) return API_BASE;
@@ -15,7 +15,17 @@ export const buildApiUrl = (url) => {
 export async function fetchResource(url, fallback, options = {}) {
   const requestUrl = buildApiUrl(url);
   try {
-    const response = await fetch(requestUrl, { credentials: "include", ...options });
+    const headers = new Headers(options.headers || {});
+    const role = getPortalRole();
+    if (role && !headers.has("X-Portal-Role")) {
+      headers.set("X-Portal-Role", role);
+    }
+
+    const response = await fetch(requestUrl, {
+      credentials: "include",
+      ...options,
+      headers,
+    });
 
     if (!response.ok) {
       if (response.status === 404) {

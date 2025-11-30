@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../utils/fetchResource";
+import { clearPortalRole, getPortalRole } from "../utils/portalRole";
 import {
   FiGrid,
   FiMapPin,
@@ -69,21 +70,23 @@ export default function DashboardLayout({ role: incomingRole = "user" }) {
     if (incomingRole) {
       setRole(incomingRole);
     } else {
-      const storedRole = localStorage.getItem("cc_role") || "user";
+      const storedRole = getPortalRole({ fallbackToLegacy: true }) || "user";
       setRole(storedRole);
     }
   }, [incomingRole]);
 
   const handleLogout = React.useCallback(async () => {
     try {
+      const portalRole = getPortalRole();
       await fetch(buildApiUrl("/api/auth/logout"), {
         method: "POST",
         credentials: "include",
+        headers: portalRole ? { "X-Portal-Role": portalRole } : undefined,
       });
     } catch (error) {
       console.error("Logout request failed", error);
     } finally {
-      localStorage.removeItem("cc_role");
+      clearPortalRole();
       navigate("/");
     }
   }, [navigate]);

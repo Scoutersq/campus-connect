@@ -15,8 +15,9 @@ const { normalizeAdminCode, allowedAdminCodes } = require("../../utils/adminCode
 
 const adminRouter = Router();
 
+const baseCookieOptions = getBaseCookieOptions();
 const cookieOptions = {
-  ...getBaseCookieOptions(),
+  ...baseCookieOptions,
   maxAge: SESSION_TTL_MS,
 };
 
@@ -142,7 +143,8 @@ adminRouter.post("/signin", validateBody(adminSigninSchema), async (req, res) =>
     user.sessionExpiresAt = sessionExpiresAt;
     await user.save({ validateBeforeSave: false });
 
-    res.cookie("token", token, cookieOptions);
+    res.clearCookie("token", baseCookieOptions);
+    res.cookie("admin_token", token, cookieOptions);
 
     const resetNotice = hasActiveSession
       ? "Signed in successfully. Previous session ended."

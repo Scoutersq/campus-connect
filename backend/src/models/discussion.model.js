@@ -73,6 +73,8 @@ const postSchema = new mongoose.Schema(
 
 // Add text index for better search functionality
 postSchema.index({ title: "text", content: "text" });
+postSchema.index({ createdAt: -1 });
+postSchema.index({ isDeleted: 1, createdAt: -1 });
 
 // Pre-hook to update timestamp before save
 postSchema.pre("save", function (next) {

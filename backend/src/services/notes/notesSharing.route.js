@@ -216,7 +216,7 @@ const resolveNoteFilePath = (note) => {
 
 const authorizeNoteOwnerOrAdmin = async (req, res, next) => {
   try {
-    const token = extractTokenFromRequest(req);
+    const token = extractTokenFromRequest(req, req.headers?.["x-portal-role"]);
     const session = await verifySessionToken(token);
 
     if (session.role === "admin") {

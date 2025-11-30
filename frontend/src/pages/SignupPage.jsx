@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../utils/fetchResource";
+import { setPortalRole } from "../utils/portalRole";
 
 export default function SignupPage() {
   const [role, setRole] = useState("user");
@@ -129,7 +130,7 @@ export default function SignupPage() {
         return;
       }
 
-      localStorage.setItem("cc_role", role);
+      setPortalRole(role);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);

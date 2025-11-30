@@ -15,8 +15,9 @@ const { normalizeStudentId, allowedStudentIds } = require("../../utils/studentId
 
 const userRouter = Router();
 
+const baseCookieOptions = getBaseCookieOptions();
 const cookieOptions = {
-  ...getBaseCookieOptions(),
+  ...baseCookieOptions,
   maxAge: SESSION_TTL_MS,
 };
 
@@ -141,7 +142,8 @@ userRouter.post("/signin", validateBody(signinSchema), async (req, res) => {
     user.sessionExpiresAt = sessionExpiresAt;
     await user.save({ validateBeforeSave: false });
 
-    res.cookie("token", token, cookieOptions);
+    res.clearCookie("token", baseCookieOptions);
+    res.cookie("user_token", token, cookieOptions);
 
     const resetNotice = hasActiveSession
       ? "Signed in successfully. Previous session ended."

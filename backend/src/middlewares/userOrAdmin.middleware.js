@@ -2,7 +2,7 @@ const { verifySessionToken, SessionError, extractTokenFromRequest } = require(".
 
 async function userOrAdminMiddleware(req, res, next) {
   try {
-    const token = extractTokenFromRequest(req);
+    const token = extractTokenFromRequest(req, req.headers?.["x-portal-role"]);
     const session = await verifySessionToken(token);
 
     if (session.role === "admin") {

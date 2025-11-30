@@ -79,6 +79,9 @@ const eventSchema = new mongoose.Schema(
   }
 );
 
+eventSchema.index({ date: 1, createdAt: -1 });
+eventSchema.index({ createdAt: -1 });
+
 const eventModel = mongoose.model("event", eventSchema);
 
 module.exports = { eventModel };

@@ -70,6 +70,9 @@ const noteSharingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+noteSharingSchema.index({ createdAt: -1 });
+noteSharingSchema.index({ subject: 1, createdAt: -1 });
+
 const noteSharingModel = mongoose.model("note", noteSharingSchema);
 
 module.exports = { noteSharingModel };
