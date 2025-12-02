@@ -5,7 +5,7 @@ const {
 } = require("./ai.helpers.js");
 const { executeAiAction } = require("./ai.actions.js");
 
-const DEFAULT_MODEL = process.env.GROQ_MODEL || "llama-3.1-70b-versatile";
+const DEFAULT_MODEL = process.env.GROQ_MODEL || "llama-3.2-90b-text-preview";
 
 function parseBoolean(value, defaultValue = false) {
   if (typeof value === "boolean") {
