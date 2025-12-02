@@ -114,9 +114,19 @@ async function handleAiCommand(req, res) {
       },
     });
   } catch (error) {
-    console.error("AI assistant error", error);
+    const groqMessage =
+      error?.response?.data?.error?.message ||
+      error?.response?.data?.message ||
+      error?.message ||
+      "Unknown error";
+
+    console.error("AI assistant error", {
+      message: groqMessage,
+      stack: error?.stack,
+    });
     return res.status(500).json({
       message: "Failed to process AI command.",
+      details: groqMessage,
     });
   }
 }

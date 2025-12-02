@@ -114,7 +114,9 @@ export default function AiAssistantWidget({ context = {} }) {
         }
 
         if (!response.ok) {
-          throw new Error(payload?.message || "Failed to reach the assistant.");
+          throw new Error(
+            payload?.details || payload?.message || "Failed to reach the assistant."
+          );
         }
 
         if (payload.reply) {
