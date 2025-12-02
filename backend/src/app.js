@@ -13,6 +13,7 @@ const { notificationRouter } = require("./services/notifications/notification.ro
 const { eventRouter } = require("./services/events/events.route.js");
 const { noteSharingRouter } = require("./services/notes/notesSharing.route.js");
 const { adminDashboardRouter } = require("./services/admin/dashboard.route.js");
+const { aiRouter } = require("./services/ai/ai.route.js");
 const skillsExchangeRouter = require("./routes/skills/skillsExchange.routes.js");
 const mentorshipRouter = require("./routes/skills/mentorship.routes.js");
 const skillsDirectoryRouter = require("./routes/skills/skillsDirectory.routes.js");
@@ -144,6 +145,7 @@ app.use("/api/notifications", notificationRouter);
 app.use("/api/announcements", notificationRouter);
 app.use("/api/events", eventRouter);
 app.use("/api/notes", noteSharingRouter);
+app.use("/api/ai", aiRouter);
 app.use("/api/skills-exchange", skillsExchangeRouter);
 app.use("/api/mentorship", mentorshipRouter);
 app.use("/api", skillsDirectoryRouter);

@@ -90,7 +90,10 @@ lostRouter.post(
 
 lostRouter.get("/all", userMiddleware, async (req, res) => {
   try {
-    const lostItems = await lostModel.find({}).lean();
+    const lostItems = await lostModel
+      .find({}, "title description location contact image dateLost status createdAt reportedBy")
+      .sort({ createdAt: -1, _id: -1 })
+      .lean();
     return res.status(200).json({ success: true, lostItems });
   } catch (error) {
     return res.status(500).json({
@@ -103,8 +106,50 @@ lostRouter.get("/all", userMiddleware, async (req, res) => {
 
 lostRouter.get("/preview", async (req, res) => {
   try {
-    const preview = await lostModel.find({}).lean();
-    return res.status(200).json({ success: true, preview });
+    const { search = "", limit } = req.query;
+
+    const filters = {};
+    const projection = {
+      title: 1,
+      description: 1,
+      location: 1,
+      contact: 1,
+      image: 1,
+      dateLost: 1,
+      status: 1,
+      createdAt: 1,
+      statusUpdatedAt: 1,
+      reportedBy: 1,
+    };
+
+    if (typeof search === "string" && search.trim().length > 0) {
+      filters.$text = { $search: search.trim() };
+      projection.score = { $meta: "textScore" };
+    }
+
+    const query = lostModel.find(filters).select(projection);
+
+    if (filters.$text) {
+      query.sort({ score: { $meta: "textScore" }, createdAt: -1, _id: -1 });
+    } else {
+      query.sort({ createdAt: -1, _id: -1 });
+    }
+
+    const numericLimit = Number(limit);
+    if (!Number.isNaN(numericLimit) && numericLimit > 0) {
+      query.limit(Math.min(Math.max(Math.trunc(numericLimit), 10), 500));
+    }
+
+    const preview = await query.lean().exec();
+    const sanitizedPreview = preview.map((entry) => {
+      if (entry && typeof entry === "object" && "score" in entry) {
+        const { score, ...rest } = entry;
+        return rest;
+      }
+      return entry;
+    });
+
+    return res.status(200).json({ success: true, preview: sanitizedPreview });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -120,7 +165,12 @@ lostRouter.get(
   validateParams(itemIdParamsSchema),
   async (req, res) => {
     try {
-      const item = await lostModel.findById(req.params.itemId).lean();
+      const item = await lostModel
+        .findById(req.params.itemId)
+        .select(
+          "title description location contact image dateLost status createdAt statusUpdatedAt reportedBy"
+        )
+        .lean();
 
       if (!item) {
         return res.status(404).json({

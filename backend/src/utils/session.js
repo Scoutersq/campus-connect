@@ -3,6 +3,108 @@ const { userModel } = require("../models/user.model.js");
 const { adminModel } = require("../models/admin.model.js");
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_VERIFICATION_CACHE_TTL_MS = 5 * 1000;
+
+const sessionVerificationCache = new Map();
+let lastCachePruneAt = 0;
+
+const pruneSessionVerificationCache = () => {
+  const now = Date.now();
+
+  if (sessionVerificationCache.size === 0) {
+    return;
+  }
+
+  if (now - lastCachePruneAt < SESSION_VERIFICATION_CACHE_TTL_MS) {
+    return;
+  }
+
+  for (const [cacheKey, cached] of sessionVerificationCache.entries()) {
+    if (!cached) {
+      sessionVerificationCache.delete(cacheKey);
+      continue;
+    }
+
+    if (cached.expiresAt <= now) {
+      sessionVerificationCache.delete(cacheKey);
+      continue;
+    }
+
+    if (cached.sessionExpiresAt && cached.sessionExpiresAt <= now) {
+      sessionVerificationCache.delete(cacheKey);
+    }
+  }
+
+  lastCachePruneAt = now;
+};
+
+const getCachedSessionVerification = (token, expectedRole) => {
+  if (!token) {
+    return null;
+  }
+
+  pruneSessionVerificationCache();
+
+  const cached = sessionVerificationCache.get(token);
+
+  if (!cached) {
+    return null;
+  }
+
+  const now = Date.now();
+
+  if (cached.expiresAt <= now) {
+    sessionVerificationCache.delete(token);
+    return null;
+  }
+
+  if (cached.sessionExpiresAt && cached.sessionExpiresAt <= now) {
+    sessionVerificationCache.delete(token);
+    return null;
+  }
+
+  if (expectedRole && cached.role !== expectedRole) {
+    return null;
+  }
+
+  return cached;
+};
+
+const setCachedSessionVerification = (token, payload) => {
+  if (!token || !payload) {
+    return;
+  }
+
+  pruneSessionVerificationCache();
+
+  sessionVerificationCache.set(token, {
+    ...payload,
+    expiresAt: Date.now() + SESSION_VERIFICATION_CACHE_TTL_MS,
+  });
+};
+
+const invalidateSessionVerificationCache = ({ sessionId, userId } = {}) => {
+  if (!sessionId && !userId) {
+    return;
+  }
+
+  const normalizedSessionId = sessionId ? String(sessionId) : null;
+  const normalizedUserId = userId ? String(userId) : null;
+
+  for (const [cacheKey, cached] of sessionVerificationCache.entries()) {
+    if (!cached) {
+      sessionVerificationCache.delete(cacheKey);
+      continue;
+    }
+
+    if (
+      (normalizedSessionId && String(cached.sessionId) === normalizedSessionId) ||
+      (normalizedUserId && String(cached.id) === normalizedUserId)
+    ) {
+      sessionVerificationCache.delete(cacheKey);
+    }
+  }
+};
 
 class SessionError extends Error {
   constructor(statusCode, message) {
@@ -114,6 +216,16 @@ async function verifySessionToken(token, { expectedRole } = {}) {
     throw new SessionError(401, "Authentication required.");
   }
 
+  const cached = getCachedSessionVerification(token, expectedRole);
+
+  if (cached) {
+    return {
+      role: cached.role,
+      id: cached.id,
+      sessionId: cached.sessionId,
+    };
+  }
+
   let decoded;
   let role = null;
 
@@ -146,10 +258,12 @@ async function verifySessionToken(token, { expectedRole } = {}) {
   const record = await Model.findById(decoded.id).select("activeSessionId sessionExpiresAt");
 
   if (!record || !record.activeSessionId) {
+    invalidateSessionVerificationCache({ sessionId: decoded.sid, userId: decoded.id });
     throw new SessionError(403, "Session expired. Please sign in again.");
   }
 
   if (String(record.activeSessionId) !== String(decoded.sid)) {
+    invalidateSessionVerificationCache({ sessionId: decoded.sid, userId: decoded.id });
     throw new SessionError(403, "This account has been signed in elsewhere. Please sign in again.");
   }
 
@@ -158,8 +272,16 @@ async function verifySessionToken(token, { expectedRole } = {}) {
       { _id: decoded.id },
       { $set: { activeSessionId: null, sessionExpiresAt: null } }
     );
+    invalidateSessionVerificationCache({ sessionId: decoded.sid, userId: decoded.id });
     throw new SessionError(403, "Session expired. Please sign in again.");
   }
+
+  setCachedSessionVerification(token, {
+    role,
+    id: decoded.id,
+    sessionId: decoded.sid,
+    sessionExpiresAt: record.sessionExpiresAt ? record.sessionExpiresAt.getTime() : null,
+  });
 
   return {
     role,
@@ -182,6 +304,8 @@ async function clearActiveSession({ role, id, sessionId }) {
   await Model.updateOne(filter, {
     $set: { activeSessionId: null, sessionExpiresAt: null },
   });
+
+  invalidateSessionVerificationCache({ sessionId, userId: id });
 }
 
 async function resolveUserIdFromToken(token) {

@@ -15,6 +15,7 @@ import {
   FiSettings,
   FiClipboard,
 } from "react-icons/fi";
+import AiAssistantWidget from "../components/AiAssistantWidget";
 
 const USER_NAVIGATION = [
   {
@@ -150,6 +151,7 @@ export default function DashboardLayout({ role: incomingRole = "user" }) {
         </aside>
         <main className="ml-64 flex-1 p-10">
           <Outlet context={{ role }} />
+          <AiAssistantWidget context={{ role }} />
         </main>
       </div>
     </div>

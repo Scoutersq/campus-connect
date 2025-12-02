@@ -46,15 +46,17 @@ const foundSchema = new Schema({
         type: Date,
         default: Date.now,
     },
-    createdAt: {
-    type: Date,
-    default: Date.now
-  },
+        createdAt: {
+        type: Date,
+        default: Date.now
+    },
 })
 
 foundSchema.index({ createdAt: -1 });
 foundSchema.index({ status: 1, createdAt: -1 });
 foundSchema.index({ reportedBy: 1, createdAt: -1 });
+foundSchema.index({ dateFound: -1, createdAt: -1 });
+foundSchema.index({ title: "text", description: "text", locationFound: "text" });
 
 const foundModel = mongoose.model("found-items",foundSchema);
 

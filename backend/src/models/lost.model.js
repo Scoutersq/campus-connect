@@ -46,15 +46,17 @@ const lostSchema = new Schema({
         type: Date,
         default: Date.now,
     },
-    createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+        createdAt: {
+        type: Date,
+        default: Date.now,
+    },
 });
 
 lostSchema.index({ createdAt: -1 });
 lostSchema.index({ status: 1, createdAt: -1 });
 lostSchema.index({ reportedBy: 1, createdAt: -1 });
+lostSchema.index({ dateLost: -1, createdAt: -1 });
+lostSchema.index({ title: "text", description: "text", location: "text" });
 
 const lostModel = mongoose.model("lost-items",lostSchema);
 module.exports = {

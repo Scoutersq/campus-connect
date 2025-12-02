@@ -14,6 +14,12 @@ const { z } = require("zod");
 
 const adminDashboardRouter = Router();
 
+const OVERVIEW_CACHE_TTL_MS = 5 * 1000;
+const overviewCache = {
+  payload: null,
+  expiresAt: 0,
+};
+
 const objectIdParamSchema = (paramName) =>
   z.object({
     [paramName]: z
@@ -24,7 +30,13 @@ const objectIdParamSchema = (paramName) =>
 
 adminDashboardRouter.get("/overview", adminMiddleware, async (req, res) => {
   try {
-    const now = new Date();
+    const nowDate = new Date();
+
+    if (overviewCache.payload && overviewCache.expiresAt > Date.now()) {
+      return res.status(200).json(overviewCache.payload);
+    }
+
+    const now = nowDate;
     const activeSessionFilter = {
       activeSessionId: { $ne: null },
       $or: [{ sessionExpiresAt: null }, { sessionExpiresAt: { $gt: now } }],
@@ -139,7 +151,7 @@ adminDashboardRouter.get("/overview", adminMiddleware, async (req, res) => {
       ),
     }));
 
-    return res.status(200).json({
+    const responsePayload = {
       success: true,
       summary: {
         users: { total: totalUsers, active: activeUsers },
@@ -154,7 +166,12 @@ adminDashboardRouter.get("/overview", adminMiddleware, async (req, res) => {
       },
       recentUsers: formattedRecentUsers,
       recentActivities: activityFeed,
-    });
+    };
+
+    overviewCache.payload = responsePayload;
+    overviewCache.expiresAt = Date.now() + OVERVIEW_CACHE_TTL_MS;
+
+    return res.status(200).json(responsePayload);
   } catch (error) {
     console.error("Admin overview error", error);
     return res.status(500).json({
