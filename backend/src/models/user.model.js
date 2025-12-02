@@ -56,7 +56,6 @@ const userSchema = new Schema({
 }, { timestamps: true });
 
 userSchema.index({ createdAt: -1 });
-userSchema.index({ activeSessionId: 1 });
 
 const userModel = mongoose.model("User", userSchema, "users");
 
