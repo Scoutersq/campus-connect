@@ -9,7 +9,7 @@ const studentIdSchema = new Schema(
       unique: true,
       uppercase: true,
       trim: true,
-      match: /^ST([1-9]|1[0-9]|20)$/,
+      match: /^ST([1-9][0-9]?|100)$/,
     },
     assignedUser: {
       type: Schema.Types.ObjectId,

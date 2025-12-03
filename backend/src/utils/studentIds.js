@@ -1,6 +1,6 @@
 const { studentIdModel } = require("../models/studentId.model.js");
 
-const allowedStudentIds = Array.from({ length: 20 }, (_, index) => `ST${index + 1}`);
+const allowedStudentIds = Array.from({ length: 100 }, (_, index) => `ST${index + 1}`);
 
 const normalizeStudentId = (value = "") => value.trim().toUpperCase();
 
