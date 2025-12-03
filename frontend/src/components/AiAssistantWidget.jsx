@@ -3,22 +3,6 @@ import { apiFetch } from "../api";
 import aiWidgetIcon from "../assets/ai-widget-icon.svg";
 import "./AiAssistantWidget.css";
 
-const STUDENT_SUGGESTIONS = [
-  "Report a lost water bottle found near the library",
-  "Show my upcoming events",
-  "Mark announcement 652f1d... as read",
-  "RSVP me for event 652f8a...",
-  "Show latest lost and found items",
-];
-
-const ADMIN_SUGGESTIONS = [
-  "Show the most recent announcements",
-  "List the latest discussions",
-  "Display shared notes",
-  "Show upcoming events",
-  "Show newest lost item reports",
-];
-
 const INITIAL_ASSISTANT_MESSAGE =
   "Hi! I'm the Campus Connect assistant. Ask me to report items, check announcements, RSVP to events, and more.";
 
@@ -186,8 +170,6 @@ export default function AiAssistantWidget({ context = {} }) {
   ]);
   const listRef = React.useRef(null);
 
-  const suggestions = portalRole === "admin" ? ADMIN_SUGGESTIONS : STUDENT_SUGGESTIONS;
-
   const toggleWidget = () => setIsOpen((prev) => !prev);
 
   React.useEffect(() => {
@@ -298,13 +280,6 @@ export default function AiAssistantWidget({ context = {} }) {
     sendMessage(inputValue);
   };
 
-  const handleSuggestion = (suggestion) => {
-    setInputValue(suggestion);
-    setTimeout(() => {
-      sendMessage(suggestion);
-    }, 0);
-  };
-
   return (
     <>
       <button
@@ -334,19 +309,6 @@ export default function AiAssistantWidget({ context = {} }) {
               ×
             </button>
           </header>
-
-          <div className="ai-widget-suggestions">
-            {suggestions.map((suggestion) => (
-              <button
-                type="button"
-                key={suggestion}
-                onClick={() => handleSuggestion(suggestion)}
-                className="ai-widget-chip"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
 
           <div className="ai-widget-messages" ref={listRef}>
             {messages.map((message) => (
