@@ -2,13 +2,10 @@
   position: fixed;
   right: 1.5rem;
   bottom: 1.5rem;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
   border: none;
   padding: 0;
-  background: radial-gradient(circle at top left, #ffcf9f, #ff8a24);
-  box-shadow: 0 12px 28px rgba(255, 102, 0, 0.35);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -27,11 +24,11 @@
 }
 
 .ai-widget-video {
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.18);
 }
 
 .ai-widget-panel {
