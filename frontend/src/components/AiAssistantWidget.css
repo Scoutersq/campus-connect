@@ -87,7 +87,13 @@
 }
 
 .ai-widget-messages::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
+  width: 0;
+  height: 0; /* Chrome, Safari, Edge */
+}
+
+.ai-widget-messages::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: none;
 }
 
 .ai-widget-message {
