@@ -1,6 +1,5 @@
 import React from "react";
 import { apiFetch } from "../api";
-import aiWidgetIcon from "../assets/ai-widget-icon.svg";
 import "./AiAssistantWidget.css";
 
 const INITIAL_ASSISTANT_MESSAGE =
@@ -300,12 +299,9 @@ export default function AiAssistantWidget({ context = {}, videoSrc }) {
             muted
             playsInline
             preload="metadata"
-            poster={aiWidgetIcon}
             aria-hidden="true"
           />
-        ) : (
-          <img src={aiWidgetIcon} alt="AI assistant" className="ai-widget-icon" />
-        )}
+        ) : null}
       </button>
 
       {isOpen && (
