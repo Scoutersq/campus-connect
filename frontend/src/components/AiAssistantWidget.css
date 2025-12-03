@@ -26,6 +26,14 @@
   height: 34px;
 }
 
+.ai-widget-video {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
 .ai-widget-panel {
   position: fixed;
   right: 1.5rem;

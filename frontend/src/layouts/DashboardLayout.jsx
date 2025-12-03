@@ -17,6 +17,8 @@ import {
 } from "react-icons/fi";
 import AiAssistantWidget from "../components/AiAssistantWidget";
 
+const assistantVideoSrc = (import.meta.env.VITE_ASSISTANT_WIDGET_VIDEO || "").trim();
+
 const USER_NAVIGATION = [
   {
     title: "Main Menu",
@@ -151,7 +153,7 @@ export default function DashboardLayout({ role: incomingRole = "user" }) {
         </aside>
         <main className="ml-64 flex-1 p-10">
           <Outlet context={{ role }} />
-          <AiAssistantWidget context={{ role }} />
+          <AiAssistantWidget context={{ role }} videoSrc={assistantVideoSrc} />
         </main>
       </div>
     </div>

@@ -160,8 +160,11 @@ function buildConversationPayload(messages) {
   }));
 }
 
-export default function AiAssistantWidget({ context = {} }) {
+export default function AiAssistantWidget({ context = {}, videoSrc }) {
   const portalRole = normalizeRole(context.role);
+  const resolvedVideoSrc = [videoSrc, context.widgetVideoSrc]
+    .map((source) => (typeof source === "string" ? source.trim() : ""))
+    .find((value) => value.length > 0) || "";
   const [isOpen, setIsOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
@@ -288,7 +291,21 @@ export default function AiAssistantWidget({ context = {} }) {
         onClick={toggleWidget}
         aria-label="Campus Connect assistant"
       >
-        <img src={aiWidgetIcon} alt="AI assistant" className="ai-widget-icon" />
+        {resolvedVideoSrc ? (
+          <video
+            className="ai-widget-video"
+            src={resolvedVideoSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            poster={aiWidgetIcon}
+            aria-hidden="true"
+          />
+        ) : (
+          <img src={aiWidgetIcon} alt="AI assistant" className="ai-widget-icon" />
+        )}
       </button>
 
       {isOpen && (
