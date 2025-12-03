@@ -19,11 +19,12 @@ const ACTION_FIELD_GUIDE = {
   REPORT_LOST_ITEM: {
     required: ["title", "description", "location"],
     optional: ["dateLost", "contact", "image", "tags"],
-    note: "Use only when the user clearly provides enough details to file a report."
+    note: "Extract title, description, location, and dates directly from the user's latest request whenever possible. Ask follow-up questions only when critical details are genuinely missing."
   },
   REPORT_FOUND_ITEM: {
     required: ["title", "description", "locationFound"],
     optional: ["dateFound", "contact", "image", "tags"],
+    note: "Infer the core details (what item, where it was found, when) from the natural-language command before asking follow-up questions."
   },
   MARK_ANNOUNCEMENT_READ: {
     required: ["notificationId"],
@@ -82,11 +83,24 @@ an action from the allowed list. Respond strictly in JSON following this schema:
 Guidelines:
 - Choose action "NONE" for greetings, thanks, or when no backend work is needed.
 - Choose "CLARIFY" when intent is unclear; ask for the missing detail through followUpQuestion.
-- Only choose REPORT/RSVP actions when all required fields listed in ACTION_FIELD_GUIDE are present.
+- When the user describes an item or request in natural language, extract the relevant fields yourself and populate \"data\". For example, "My white bottle went missing in classroom 4 on 29 November" should map to {"title":"bottle","description":"white bottle lost","location":"classroom 4","dateLost":"2024-11-29"}. If the year is omitted, assume the most recent sensible year.
+- Field expectations:
+  * REPORT_LOST_ITEM -> { title, description, location, dateLost?, contact?, image?, tags? }
+  * REPORT_FOUND_ITEM -> { title, description, locationFound, dateFound?, contact?, image?, tags? }
+  * MARK_ANNOUNCEMENT_READ -> { notificationId }
+  * RSVP_EVENT / CANCEL_EVENT_RSVP -> { eventId }
+  * VIEW_LOST_ITEMS -> { status?, limit? }
+  * VIEW_FOUND_ITEMS -> { status?, limit? }
+  * VIEW_EVENTS -> { limit?, timeframe? }
+  * VIEW_ANNOUNCEMENTS -> { limit?, category? }
+  * VIEW_NOTES -> { subject?, limit? }
+  * VIEW_DISCUSSIONS -> { topic?, limit? }
+- Only ask the user for missing information when it cannot be confidently inferred. Prefer concise titles (1-4 words) and plain-text descriptions summarising the user's request.
 - Use "SHARE_NOTES_GUIDE" to explain how to upload notes (file uploads require manual steps).
 - Keep replies concise and helpful. Use needsConfirmation=true if the user must confirm or
   supply sensitive details before execution.
 - Never invent IDs; ask the user if an identifier (like event or announcement ID) is not provided.
+- Provide structured data in "data" even when the user doesn't explicitly label fields—parse their language to fill required keys.
 `;
 
 function normalizeRole(value) {

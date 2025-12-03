@@ -26,6 +26,149 @@ function normalizeRole(role) {
   return role === "admin" ? "admin" : "student";
 }
 
+function formatDate(value) {
+  if (!value) {
+    return "";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return parsed.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function renderExecutionDetails(action, details) {
+  if (!details || typeof details !== "object") {
+    return [];
+  }
+
+  const lines = [];
+  const maxItems = 3;
+
+  const addList = (items, formatter, heading) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      return;
+    }
+    if (heading) {
+      lines.push(heading);
+    }
+    items.slice(0, maxItems).forEach((item, index) => {
+      const rendered = formatter(item, index);
+      if (rendered) {
+        lines.push(`• ${rendered}`);
+      }
+    });
+    if (items.length > maxItems) {
+      lines.push(`…and ${items.length - maxItems} more.`);
+    }
+  };
+
+  switch (action) {
+    case "VIEW_LOST_ITEMS": {
+      addList(
+        details.items,
+        (item) => {
+          if (!item) return null;
+          const date = formatDate(item.dateLost || item.createdAt);
+          const location = item.location || "Unknown location";
+          const status = item.status ? ` (${item.status})` : "";
+          const parts = [item.title || "Unnamed item", location];
+          if (date) {
+            parts.push(date);
+          }
+          return `${parts.join(" · ")}${status}`;
+        },
+        "Here are the latest lost items:"
+      );
+      break;
+    }
+    case "VIEW_FOUND_ITEMS": {
+      addList(
+        details.items,
+        (item) => {
+          if (!item) return null;
+          const date = formatDate(item.dateFound || item.createdAt);
+          const location = item.locationFound || item.location || "Unknown location";
+          const status = item.status ? ` (${item.status})` : "";
+          const parts = [item.title || "Unnamed item", location];
+          if (date) {
+            parts.push(date);
+          }
+          return `${parts.join(" · ")}${status}`;
+        },
+        "Here are the latest found items:"
+      );
+      break;
+    }
+    case "VIEW_EVENTS": {
+      addList(
+        details.events,
+        (event) => {
+          if (!event) return null;
+          const date = formatDate(event.date || event.startDate);
+          const venue = event.venue || "Venue TBA";
+          return `${event.title || "Untitled event"} · ${venue}${date ? ` · ${date}` : ""}`;
+        },
+        "Upcoming events:"
+      );
+      break;
+    }
+    case "VIEW_ANNOUNCEMENTS": {
+      addList(
+        details.announcements,
+        (announcement) => {
+          if (!announcement) return null;
+          const date = formatDate(announcement.createdAt);
+          const category = announcement.category
+            ? ` [${announcement.category}]`
+            : "";
+          return `${announcement.title || "Announcement"}${category}${
+            date ? ` · ${date}` : ""
+          }`;
+        },
+        "Recent announcements:"
+      );
+      break;
+    }
+    case "VIEW_NOTES": {
+      addList(
+        details.notes,
+        (note) => {
+          if (!note) return null;
+          const subject = note.subject ? ` · ${note.subject}` : "";
+          const downloads = typeof note.downloads === "number" ? ` (${note.downloads} downloads)` : "";
+          return `${note.title || note.fileName || "Shared note"}${subject}${downloads}`;
+        },
+        "Shared notes:"
+      );
+      break;
+    }
+    case "VIEW_DISCUSSIONS": {
+      addList(
+        details.discussions,
+        (discussion) => {
+          if (!discussion) return null;
+          const tags = Array.isArray(discussion.tags) && discussion.tags.length
+            ? ` [${discussion.tags.slice(0, 3).join(", ")}]`
+            : "";
+          const date = formatDate(discussion.createdAt);
+          return `${discussion.title || "Discussion"}${tags}${date ? ` · ${date}` : ""}`;
+        },
+        "Latest discussions:"
+      );
+      break;
+    }
+    default:
+      break;
+  }
+
+  return lines;
+}
+
 function buildConversationPayload(messages) {
   return messages.map((message) => ({
     role: message.role === "assistant" ? "assistant" : "user",
@@ -128,12 +271,15 @@ export default function AiAssistantWidget({ context = {} }) {
         }
 
         if (payload.execution) {
-          const { success, message } = payload.execution;
+          const { success, message, details } = payload.execution;
           if (message) {
             appendMessage("assistant", message);
           } else if (success) {
             appendMessage("assistant", "Action completed.");
           }
+
+          const detailLines = renderExecutionDetails(payload.action, details);
+          detailLines.forEach((line) => appendMessage("assistant", line));
         }
       } catch (error) {
         appendMessage(
