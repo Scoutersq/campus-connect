@@ -51,6 +51,33 @@ const collectOrigins = (...sources) =>
 		.map(normalizeOrigin)
 		.filter(Boolean);
 
+const collectOriginPatterns = (...sources) =>
+	sources
+		.filter((value) => typeof value === "string" && value.length > 0)
+		.flatMap((value) => value.split(","))
+		.map((pattern) => pattern.replace(/\/?$/, "").trim())
+		.filter(Boolean);
+
+const escapeRegexExceptStar = (value = "") => value.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+
+const compileOriginPattern = (pattern) => {
+	const source = pattern.replace(/\/?$/, "").trim();
+	if (!source) {
+		return null;
+	}
+	if (!source.includes("*")) {
+		return {
+			pattern: source,
+			regex: new RegExp(`^${escapeRegexExceptStar(source)}$`, "i"),
+		};
+	}
+	const escaped = escapeRegexExceptStar(source).replace(/\\\*/g, ".*");
+	return {
+		pattern: source,
+		regex: new RegExp(`^${escaped}$`, "i"),
+	};
+};
+
 const defaultOrigins = [
 	"http://localhost:5173",
 	"http://127.0.0.1:5173",
@@ -66,6 +93,11 @@ const envOrigins = collectOrigins(
 );
 
 const allowedOrigins = [...new Set([...defaultOrigins.map(normalizeOrigin), ...envOrigins])];
+
+const originPatternSources = collectOriginPatterns(process.env.ALLOWED_ORIGIN_PATTERNS);
+const allowedOriginPatterns = originPatternSources
+	.map((pattern) => compileOriginPattern(pattern))
+	.filter((compiled) => compiled && compiled.regex instanceof RegExp);
 
 const allowedHeaders = [
 	"Content-Type",
@@ -86,6 +118,9 @@ app.use(
 			if (allowedOrigins.includes(normalizedOrigin)) {
 				return callback(null, true);
 			}
+			if (allowedOriginPatterns.some(({ regex }) => regex.test(normalizedOrigin))) {
+				return callback(null, true);
+			}
 			return callback(new Error(`Origin ${normalizedOrigin || origin} not allowed by CORS`));
 		},
 		credentials: true,
@@ -95,7 +130,9 @@ app.use(
 
 app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
 
-const frameAncestors = ["'self'", ...allowedOrigins.filter((origin) => /^https?:\/\//i.test(origin))];
+const frameAncestorOrigins = allowedOrigins.filter((origin) => /^https?:\/\//i.test(origin));
+const frameAncestorPatterns = originPatternSources.filter((pattern) => pattern.startsWith("https://*."));
+const frameAncestors = ["'self'", ...frameAncestorOrigins, ...frameAncestorPatterns];
 const uniqueFrameAncestors = [...new Set(frameAncestors)];
 
 app.use((req, res, next) => {

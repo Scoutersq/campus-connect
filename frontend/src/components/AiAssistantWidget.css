@@ -35,7 +35,7 @@
   position: fixed;
   right: 1.5rem;
   bottom: 5.5rem;
-  width: 320px;
+  width: min(320px, calc(100vw - 2.5rem));
   max-height: calc(100vh - 8rem);
   display: flex;
   flex-direction: column;
