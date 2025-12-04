@@ -1,8 +1,15 @@
 import { getPortalRole } from "./utils/portalRole";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL?.replace(/\/$/, "") ||
-  "https://campus-connect-1-w95c.onrender.com";
+const sanitizeBase = (value = "") => value.replace(/\/$/, "").trim();
+
+const explicitBase = sanitizeBase(import.meta.env.VITE_API_URL || "");
+const isBrowser = typeof window !== "undefined";
+const browserOrigin = isBrowser ? sanitizeBase(window.location.origin) : "";
+const isVercelHost = isBrowser && /\.vercel\.app$/i.test(window.location.hostname);
+
+export const API_BASE_URL = isVercelHost
+	? browserOrigin
+	: explicitBase || "https://campus-connect-1-w95c.onrender.com";
 
 export async function apiFetch(endpoint, options = {}) {
 	const headers = new Headers(options.headers || {});
