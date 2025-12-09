@@ -23,6 +23,9 @@ const {
 	postsRouter,
 	commentsRouter,
 } = require("./services/discussion/discussion.route.js");
+const {
+	liveDiscussionsRouter,
+} = require("./services/discussion/liveDiscussions.route.js");
 const app = express();
 const dotenv = require("dotenv")
 const cookieParser = require("cookie-parser");
@@ -189,6 +192,7 @@ app.use("/api", skillsDirectoryRouter);
 app.use("/api/emergency", emergencyRouter);
 app.use("/api/posts", postsRouter);
 app.use("/api/comments", commentsRouter);
+app.use("/api/discussions/live", liveDiscussionsRouter);
 
 app.use((err, req, res, next) => {
 	const statusCode = err.statusCode || err.status || 500;

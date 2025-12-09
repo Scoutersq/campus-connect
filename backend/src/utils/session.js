@@ -8,6 +8,8 @@ const SESSION_VERIFICATION_CACHE_TTL_MS = 5 * 1000;
 const sessionVerificationCache = new Map();
 let lastCachePruneAt = 0;
 
+const DEFAULT_SOCKET_TOKEN_TTL_SECONDS = 5 * 60;
+
 const pruneSessionVerificationCache = () => {
   const now = Date.now();
 
@@ -152,6 +154,10 @@ function shouldUseSecureCookies() {
   return httpsOrigins.some((origin) => /^https:\/\//i.test(origin));
 }
 
+function getSocketTokenSecret() {
+  return process.env.JWT_SOCKET_SECRET || process.env.JWT_USER_SECRET;
+}
+
 function getBaseCookieOptions() {
   const secure = shouldUseSecureCookies();
 
@@ -160,6 +166,71 @@ function getBaseCookieOptions() {
     secure,
     sameSite: secure ? "none" : "lax",
     path: "/",
+  };
+}
+
+function createSocketAuthToken({ userId, sessionId, expiresInSeconds } = {}) {
+  if (!userId || !sessionId) {
+    throw new SessionError(500, "Unable to issue socket session token.");
+  }
+
+  const secret = getSocketTokenSecret();
+
+  const payload = {
+    uid: String(userId),
+    sid: String(sessionId),
+    t: "socket",
+  };
+
+  const ttl = expiresInSeconds || DEFAULT_SOCKET_TOKEN_TTL_SECONDS;
+
+  return jwt.sign(payload, secret, { expiresIn: ttl });
+}
+
+async function verifySocketAuthToken(token) {
+  if (!token) {
+    throw new SessionError(401, "Authentication required.");
+  }
+
+  const secret = getSocketTokenSecret();
+
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, secret);
+  } catch (_error) {
+    throw new SessionError(403, "Invalid or expired token.");
+  }
+
+  if (!decoded || decoded.t !== "socket" || !decoded.uid || !decoded.sid) {
+    throw new SessionError(403, "Invalid socket session token.");
+  }
+
+  const user = await userModel
+    .findById(decoded.uid)
+    .select("firstName lastName avatarUrl activeSessionId sessionExpiresAt")
+    .lean();
+
+  if (!user || !user.activeSessionId) {
+    throw new SessionError(403, "Session expired. Please sign in again.");
+  }
+
+  if (String(user.activeSessionId) !== String(decoded.sid)) {
+    throw new SessionError(403, "Session expired. Please sign in again.");
+  }
+
+  if (user.sessionExpiresAt && user.sessionExpiresAt < new Date()) {
+    throw new SessionError(403, "Session expired. Please sign in again.");
+  }
+
+  return {
+    userId: String(decoded.uid),
+    sessionId: String(decoded.sid),
+    profile: {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarUrl: user.avatarUrl || null,
+    },
   };
 }
 
@@ -325,4 +396,6 @@ module.exports = {
   resolveUserIdFromToken,
   extractTokenFromRequest,
   getBaseCookieOptions,
+  createSocketAuthToken,
+  verifySocketAuthToken,
 };

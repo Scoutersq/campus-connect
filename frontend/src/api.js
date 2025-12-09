@@ -1,6 +1,6 @@
 import { getPortalRole } from "./utils/portalRole";
 
-const sanitizeBase = (value = "") => value.replace(/\/$/, "").trim();
+const sanitizeBase = (value = "") => value.replace(/\/+$/, "").trim();
 
 const explicitBase = sanitizeBase(import.meta.env.VITE_API_URL || "");
 const isBrowser = typeof window !== "undefined";
@@ -10,6 +10,10 @@ const isVercelHost = isBrowser && /\.vercel\.app$/i.test(window.location.hostnam
 export const API_BASE_URL = isVercelHost
 	? browserOrigin
 	: explicitBase || "https://campus-connect-1-w95c.onrender.com";
+
+const explicitSocketBase = sanitizeBase(import.meta.env.VITE_SOCKET_URL || explicitBase);
+
+export const SOCKET_BASE_URL = explicitSocketBase || API_BASE_URL;
 
 export async function apiFetch(endpoint, options = {}) {
 	const headers = new Headers(options.headers || {});
