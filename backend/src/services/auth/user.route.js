@@ -149,7 +149,7 @@ userRouter.post("/signin", validateBody(signinSchema), async (req, res) => {
       ? "Signed in successfully. Previous session ended."
       : "Signed in successfully.";
 
-    return res.status(200).json({ success: true, message: resetNotice });
+    return res.status(200).json({ success: true, message: resetNotice, token });
   } catch (error) {
     let status = 500;
     let message = "Internal server error.";

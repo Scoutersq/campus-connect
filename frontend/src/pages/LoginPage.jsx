@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../utils/fetchResource";
 import { setPortalRole } from "../utils/portalRole";
+import { setSessionToken } from "../utils/sessionToken";
 
 export default function LoginPage() {
   const [role, setRole] = useState("user");
@@ -72,6 +73,9 @@ export default function LoginPage() {
       }
 
       setPortalRole(role);
+      if (data?.token) {
+        setSessionToken(data.token);
+      }
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);

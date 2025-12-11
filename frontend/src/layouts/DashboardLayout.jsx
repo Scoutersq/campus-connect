@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { buildApiUrl } from "../utils/fetchResource";
 import { clearPortalRole, getPortalRole } from "../utils/portalRole";
+import { clearSessionToken } from "../utils/sessionToken";
 import {
   FiGrid,
   FiMapPin,
@@ -135,6 +136,7 @@ export default function DashboardLayout({ role: incomingRole = "user" }) {
       console.error("Logout request failed", error);
     } finally {
       clearPortalRole();
+      clearSessionToken();
       navigate("/");
     }
   }, [navigate]);

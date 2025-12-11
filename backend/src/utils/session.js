@@ -254,6 +254,26 @@ function extractTokenFromRequest(req, preferredRole) {
     normalizeRoleHint(req?.headers?.["x-portal-role"]) ||
     normalizeRoleHint(req?.headers?.["x-auth-role"]);
 
+  const sessionHeaderToken = (() => {
+    const value = req?.headers?.["x-session-token"];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+    return null;
+  })();
+
+  if (sessionHeaderToken) {
+    return sessionHeaderToken;
+  }
+
+  const authHeader = req?.headers?.authorization || req?.headers?.Authorization;
+  if (typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")) {
+    const bearerToken = authHeader.slice(7).trim();
+    if (bearerToken) {
+      return bearerToken;
+    }
+  }
+
   const tokenCandidates = [];
 
   const pushCandidate = (value) => {
@@ -273,11 +293,6 @@ function extractTokenFromRequest(req, preferredRole) {
   pushCandidate(cookies.user_token);
   pushCandidate(cookies.admin_token);
   pushCandidate(cookies.token);
-
-  const authHeader = req?.headers?.authorization || req?.headers?.Authorization;
-  if (typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")) {
-    pushCandidate(authHeader.slice(7).trim());
-  }
 
   return tokenCandidates.length > 0 ? tokenCandidates[0] : null;
 }
