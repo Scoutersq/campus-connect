@@ -288,17 +288,15 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
         : `${message.sender?.firstName ?? ""} ${message.sender?.lastName ?? ""}`.trim();
       const displayLabel = senderLabelRaw.length > 0 ? senderLabelRaw.replace(/\s+/g, " ") : "Participant";
 
-      const bubbleClasses = [
-        "max-w-[70%] rounded-3xl px-4 py-3 text-sm leading-relaxed shadow",
-        isSelf
-          ? "rounded-tl-md rounded-bl-md bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-          : "rounded-tr-md rounded-br-md bg-slate-100 text-slate-700",
-      ]
-        .filter(Boolean)
-        .join(" ");
+      const bubbleBaseClasses = "max-w-[70%] rounded-3xl px-4 py-3 text-sm leading-relaxed shadow";
+      const bubbleVariantClasses = isSelf
+        ? "rounded-tl-md rounded-bl-md bg-gradient-to-r from-orange-500 to-orange-400 text-white"
+        : "rounded-tr-md rounded-br-md bg-slate-100 text-slate-700";
+      const bubbleClasses = `${bubbleBaseClasses} ${bubbleVariantClasses}`;
+      const messageWrapperClasses = "flex justify-start";
 
       return (
-        <div key={message.id} className={`flex ${isSelf ? "justify-start" : "justify-end"}`}>
+        <div key={message.id} className={messageWrapperClasses}>
           <div className={bubbleClasses}>
             <p>{message.content}</p>
             <span
