@@ -277,47 +277,42 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
     }
   };
 
-  const renderMessages = useMemo(
-    () =>
-      messages.map((message) => {
-        const isSelf = currentUserId
-          ? String(message.sender?.id) === String(currentUserId)
-          : message.sender?.id === "self";
-        const senderLabel = isSelf
-          ? "You"
-          : `${message.sender?.firstName ?? ""} ${message.sender?.lastName ?? ""}`
-              .trim()
-              .replace(/\s+/g, " ");
-        const displayLabel = senderLabel || "Participant";
+  const renderMessages = useMemo(() => {
+    return messages.map((message) => {
+      const isSelf = currentUserId
+        ? String(message.sender?.id) === String(currentUserId)
+        : message.sender?.id === "self";
 
-        return (
-          <div
-            key={message.id}
-            className={`flex ${isSelf ? "justify-start" : "justify-end"}`}
-          >
-            <div
-              className={`max-w-[70%] rounded-3xl px-4 py-3 text-sm leading-relaxed shadow ${
-                {isSelf
-                  ? "You"
-                  : `${message.sender?.firstName ?? ""} ${message.sender?.lastName ?? ""}`.trim()}
-                {" "}
+      const senderLabelRaw = isSelf
+        ? "You"
+        : `${message.sender?.firstName ?? ""} ${message.sender?.lastName ?? ""}`.trim();
+      const displayLabel = senderLabelRaw.length > 0 ? senderLabelRaw.replace(/\s+/g, " ") : "Participant";
+
+      const bubbleClasses = [
+        "max-w-[70%] rounded-3xl px-4 py-3 text-sm leading-relaxed shadow",
+        isSelf
+          ? "rounded-tl-md rounded-bl-md bg-gradient-to-r from-orange-500 to-orange-400 text-white"
+          : "rounded-tr-md rounded-br-md bg-slate-100 text-slate-700",
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      return (
+        <div key={message.id} className={`flex ${isSelf ? "justify-start" : "justify-end"}`}>
+          <div className={bubbleClasses}>
+            <p>{message.content}</p>
+            <span
+              className={`mt-2 block text-[11px] uppercase tracking-wide ${
+                isSelf ? "text-white/70" : "text-slate-500"
+              }`}
             >
-              <p>{message.content}</p>
-              <span
-                className={`mt-2 block text-[11px] uppercase tracking-wide ${
-                  isSelf ? "text-white/70" : "text-slate-500"
-                }`}
-              >
-                {displayLabel}
-                {"  "}
-                {formatTime(message.createdAt)}
-              </span>
-            </div>
+              {displayLabel} {formatTime(message.createdAt)}
+            </span>
           </div>
-        );
-      }),
-    [messages, currentUserId]
-  );
+        </div>
+      );
+    });
+  }, [messages, currentUserId]);
 
   return (
     <section className="flex h-full w-full flex-col rounded-3xl border border-orange-100 bg-gradient-to-b from-rose-50/60 to-white shadow-2xl">
