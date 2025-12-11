@@ -29,6 +29,7 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
   const [participantCount, setParticipantCount] = useState(
     discussion?.participantsCount || 0
   );
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const socketRef = useRef(null);
   const shouldAutoScrollRef = useRef(true);
@@ -101,7 +102,9 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
     }
 
     try {
-      const { token } = await requestLiveDiscussionSocketToken();
+      const { token, userId } = await requestLiveDiscussionSocketToken();
+
+      setCurrentUserId(userId || null);
 
       const socket = io(SOCKET_BASE_URL, {
         transports: ["websocket", "polling"],
@@ -135,6 +138,7 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
           next.push(payload);
           return next;
         });
+        setSending(false);
       });
 
       socket.on("connect", () => {
@@ -244,7 +248,7 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
       content: trimmed,
       createdAt: new Date().toISOString(),
       sender: {
-        id: "self",
+        id: currentUserId || "self",
         firstName: "You",
         lastName: "",
       },
@@ -276,42 +280,47 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
   const renderMessages = useMemo(
     () =>
       messages.map((message) => {
-        const isSelf = message.sender?.id === "self";
+        const isSelf = currentUserId
+          ? String(message.sender?.id) === String(currentUserId)
+          : message.sender?.id === "self";
+        const senderLabel = isSelf
+          ? "You"
+          : `${message.sender?.firstName ?? ""} ${message.sender?.lastName ?? ""}`
+              .trim()
+              .replace(/\s+/g, " ");
+        const displayLabel = senderLabel || "Participant";
+
         return (
           <div
             key={message.id}
-            className={`flex ${isSelf ? "justify-end" : "justify-start"}`}
+            className={`flex ${isSelf ? "justify-start" : "justify-end"}`}
           >
             <div
               className={`max-w-[70%] rounded-3xl px-4 py-3 text-sm leading-relaxed shadow ${
-                isSelf
-                  ? "rounded-br-md bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                  : "rounded-bl-md bg-white text-slate-700"
-              }`}
+                {isSelf
+                  ? "You"
+                  : `${message.sender?.firstName ?? ""} ${message.sender?.lastName ?? ""}`.trim()}
+                {" "}
             >
               <p>{message.content}</p>
               <span
                 className={`mt-2 block text-[11px] uppercase tracking-wide ${
-                  isSelf ? "text-white/70" : "text-slate-400"
+                  isSelf ? "text-white/70" : "text-slate-500"
                 }`}
               >
-                {message.sender?.firstName && !isSelf
-                  ? `${message.sender.firstName} ${message.sender.lastName ?? ""}`.trim()
-                  : isSelf
-                  ? "You"
-                  : ""}
-                {" "}
+                {displayLabel}
+                {"  "}
                 {formatTime(message.createdAt)}
               </span>
             </div>
           </div>
         );
       }),
-    [messages]
+    [messages, currentUserId]
   );
 
   return (
-    <section className="flex h-full flex-col rounded-3xl border border-orange-100 bg-gradient-to-b from-rose-50/60 to-white shadow-xl">
+    <section className="flex h-full w-full flex-col rounded-3xl border border-orange-100 bg-gradient-to-b from-rose-50/60 to-white shadow-2xl">
       <header className="flex items-center justify-between rounded-t-3xl border-b border-orange-100 bg-white/90 px-6 py-5">
         <div className="space-y-1">
           <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
@@ -354,7 +363,7 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
       <div className="flex flex-1 flex-col overflow-hidden">
         <div
           ref={listContainerRef}
-          className="flex-1 space-y-4 overflow-y-auto px-6 py-6"
+          className="flex-1 space-y-4 overflow-y-auto bg-gradient-to-b from-white via-orange-50/40 to-white px-6 py-6"
           onScroll={(event) => {
             const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
             const nearBottom = scrollHeight - (scrollTop + clientHeight) < 80;

@@ -398,6 +398,7 @@ router.post("/socket-token", userMiddleware, async (req, res) => {
       success: true,
       token,
       expiresIn: 300,
+      userId: String(req.userID),
     });
   } catch (error) {
     const statusCode =
