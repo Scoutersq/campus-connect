@@ -32,7 +32,7 @@ export function CreateDiscussionModal({ open, onClose, onSubmit, busy }) {
           onClick={onClose}
           className="absolute right-6 top-6 text-sm font-semibold text-slate-400 transition hover:text-slate-600"
         >
-          Esc
+          X
         </button>
         <h2 className="text-2xl font-semibold text-slate-900">Start a new discussion</h2>
         <p className="mt-2 text-sm text-slate-500">
