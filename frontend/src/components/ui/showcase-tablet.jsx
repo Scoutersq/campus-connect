@@ -49,10 +49,10 @@ export function ShowcaseTablet({
   }, []);
 
   useEffect(() => {
-    const animate = () => {
-      const current = animatedProgressRef.current;
-      const target = targetProgress;
-      const next = current + (target - current) * 0.12;
+      const animate = () => {
+        const current = animatedProgressRef.current;
+        const target = targetProgress;
+        const next = current + (target - current) * 0.2;
 
       if (Math.abs(next - target) < 0.0005) {
         animatedProgressRef.current = target;
@@ -81,14 +81,14 @@ export function ShowcaseTablet({
   }, [targetProgress]);
 
   const straightProgress = clamp((displayProgress - 0.08) / 0.55);
-  const eased = straightProgress < 1 ? 1 - Math.pow(1 - straightProgress, 3) : 1;
+  const eased = straightProgress < 1 ? 1 - Math.pow(1 - straightProgress, 2.2) : 1;
   const tiltFactor = 1 - eased;
 
-  const transform = `perspective(1600px) rotateX(${10 * tiltFactor}deg) translateY(${clamp(
-    tiltFactor * 18,
+  const transform = `perspective(1600px) rotateX(${16 * tiltFactor}deg) translateY(${clamp(
+    tiltFactor * 32,
     0,
-    18
-  )}px) scale(${0.92 + eased * 0.08})`;
+    32
+  )}px) scale(${0.88 + eased * 0.12})`;
 
   const deviceStyle = {
     transform,
