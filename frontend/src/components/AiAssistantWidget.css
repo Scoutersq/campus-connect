@@ -31,6 +31,20 @@
   box-shadow: 0 8px 18px rgba(16, 24, 40, 0.18);
 }
 
+.ai-widget-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff8a24, #ff5d00);
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.18);
+}
+
 .ai-widget-panel {
   position: fixed;
   right: 1.5rem;

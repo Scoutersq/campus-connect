@@ -301,7 +301,11 @@ export default function AiAssistantWidget({ context = {}, videoSrc }) {
             preload="metadata"
             aria-hidden="true"
           />
-        ) : null}
+        ) : (
+          <span className="ai-widget-fallback" aria-hidden="true">
+            AI
+          </span>
+        )}
       </button>
 
       {isOpen && (
