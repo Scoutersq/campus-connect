@@ -5,6 +5,7 @@ import { BackgroundRippleEffect } from "../components/ui/background-ripple-effec
 import { ShowcaseTablet } from "../components/ui/showcase-tablet";
 import dashboardImage from "../assets/dashboard-img.png";
 
+
 export default function HomePage() {
   const navigate = useNavigate();
   return (
