@@ -87,12 +87,18 @@ const defaultOrigins = [
 	"http://localhost:4173",
 ];
 
+const vercelOrigin = process.env.VERCEL_URL
+	? `https://${process.env.VERCEL_URL.replace(/^https?:\/\//i, "")}`
+	: undefined;
+
 const envOrigins = collectOrigins(
 	process.env.CLIENT_ORIGIN,
 	process.env.CLIENT_ORIGINS,
 	process.env.FRONTEND_URL,
 	process.env.FRONTEND_URLS,
-	process.env.ALLOWED_ORIGINS
+	process.env.ALLOWED_ORIGINS,
+	process.env.PRODUCTION_ORIGIN,
+	vercelOrigin
 );
 
 const allowedOrigins = [...new Set([...defaultOrigins.map(normalizeOrigin), ...envOrigins])];
