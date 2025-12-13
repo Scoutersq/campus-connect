@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
+import ComingSoonPage from "./pages/ComingSoonPage";
 import { buildApiUrl } from "./utils/fetchResource";
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/coming-soon" element={<ComingSoonPage />} />
         <Route path="/dashboard/*" element={<DashboardPage />} />
       </Routes>
     </BrowserRouter>

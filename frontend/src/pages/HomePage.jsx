@@ -33,7 +33,7 @@ export default function HomePage() {
           </button>
           <button
             className="min-w-[200px] rounded-full border border-orange-200 bg-white px-8 py-3 text-base font-semibold text-orange-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-400 hover:bg-orange-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400 active:translate-y-0"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/coming-soon")}
           >
             See Lists
           </button>
