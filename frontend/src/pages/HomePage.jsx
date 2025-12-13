@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import { BackgroundRippleEffect } from "../components/ui/background-ripple-effect";
 import { ShowcaseTablet } from "../components/ui/showcase-tablet";
@@ -31,12 +31,12 @@ export default function HomePage() {
           >
             Join Community
           </button>
-          <Link
-            to="/coming-soon"
+          <a
+            href="/coming-soon"
             className="min-w-[200px] rounded-full border border-orange-200 bg-white px-8 py-3 text-base font-semibold text-orange-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-400 hover:bg-orange-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400 active:translate-y-0"
           >
             See Lists
-          </Link>
+          </a>
         </div>
       </main>
       <ShowcaseTablet src={dashboardImage} className="mt-6" />
