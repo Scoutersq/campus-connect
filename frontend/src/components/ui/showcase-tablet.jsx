@@ -83,13 +83,12 @@ export function ShowcaseTablet({
   const straightProgress = clamp((displayProgress - 0.08) / 0.55);
   const eased = straightProgress < 1 ? 1 - Math.pow(1 - straightProgress, 3) : 1;
   const tiltFactor = 1 - eased;
-  const skew = -6 * tiltFactor;
 
-  const transform = `perspective(1600px) rotateX(${12 * tiltFactor}deg) rotateY(${-10 * tiltFactor}deg) translateY(${clamp(
+  const transform = `perspective(1600px) rotateX(${10 * tiltFactor}deg) translateY(${clamp(
     tiltFactor * 18,
     0,
     18
-  )}px) scale(${0.9 + eased * 0.1}) skewX(${skew}deg)`;
+  )}px) scale(${0.92 + eased * 0.08})`;
 
   const deviceStyle = {
     transform,
@@ -100,14 +99,10 @@ export function ShowcaseTablet({
     opacity: 0.2 + eased * 0.35,
   };
 
-  const frameStyle = {
-    transform: `skewX(${skew * -1}deg)`,
-  };
-
   return (
     <section ref={containerRef} className={`showcase-tablet ${className}`}>
       <div className="showcase-tablet__device" style={deviceStyle}>
-        <div className="showcase-tablet__frame" style={frameStyle}>
+        <div className="showcase-tablet__frame">
           <div className="showcase-tablet__bezel">
             <span className="showcase-tablet__camera" aria-hidden="true" />
             <div className="showcase-tablet__screen">
