@@ -1,0 +1,139 @@
+.background-ripple-effect {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  --grid-color: rgba(17, 24, 39, 0.16);
+  --grid-size: 80px;
+  --pointer-x: 50%;
+  --pointer-y: 35%;
+  --pulse-duration: 16s;
+  background-color: transparent;
+  background-image:
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, rgba(0, 0, 0, 0.45) 70%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, rgba(0, 0, 0, 0.45) 70%, rgba(0, 0, 0, 0) 100%);
+}
+
+.background-ripple-effect::before,
+.background-ripple-effect::after {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  background-repeat: no-repeat;
+  opacity: 0.35;
+  transform-origin: center;
+  animation: ripple-rotate var(--pulse-duration) linear infinite;
+  mix-blend-mode: normal;
+}
+
+.background-ripple-effect::before {
+  background-image: radial-gradient(
+    circle at var(--pointer-x) var(--pointer-y),
+    rgba(251, 146, 60, 0.18),
+    rgba(251, 146, 60, 0.08) 25%,
+    transparent 55%
+  );
+  filter: blur(48px);
+}
+
+.background-ripple-effect::after {
+  animation-direction: reverse;
+  background-image: radial-gradient(
+    circle at var(--pointer-x) var(--pointer-y),
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.18) 22%,
+    transparent 48%
+  );
+  filter: blur(70px);
+}
+
+.background-ripple-effect__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140vmax;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 146, 60, 0.16);
+  transform: translate(-50%, -50%) scale(0.35);
+  animation: ripple-pulse var(--pulse-duration) ease-in-out infinite;
+  mix-blend-mode: soft-light;
+  opacity: 0.35;
+}
+
+.background-ripple-effect__ring:nth-child(2) {
+  border-color: rgba(249, 115, 22, 0.12);
+  animation-delay: calc(var(--pulse-duration) * -0.33);
+}
+
+.background-ripple-effect__ring:nth-child(3) {
+  border-color: rgba(234, 88, 12, 0.1);
+  animation-delay: calc(var(--pulse-duration) * -0.66);
+}
+
+.background-ripple-effect__layer {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      to right,
+      rgba(15, 23, 42, 0.04) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(15, 23, 42, 0.04) 1px,
+      transparent 1px
+    );
+  background-size: calc(var(--grid-size) / 2) calc(var(--grid-size) / 2);
+  opacity: 0.35;
+  mix-blend-mode: normal;
+  transform-origin: center;
+  animation: layer-shift 24s ease-in-out infinite;
+}
+
+.background-ripple-effect__layer--alt {
+  opacity: 0.25;
+  transform: rotate(3deg) scale(1.05);
+  animation-direction: reverse;
+}
+
+@keyframes ripple-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.35);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.15;
+  }
+}
+
+@keyframes ripple-rotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1.05);
+  }
+}
+
+@keyframes layer-shift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.2%, -0.8%, 0) scale(1.01);
+  }
+  100% {
+    transform: translate3d(-1.2%, 0.8%, 0) scale(1);
+  }
+}

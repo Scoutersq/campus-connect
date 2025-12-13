@@ -19,6 +19,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import AiAssistantWidget from "../components/AiAssistantWidget";
+import BrandLogo from "../components/BrandLogo";
 
 const assistantVideoSrc = (import.meta.env.VITE_ASSISTANT_WIDGET_VIDEO || "").trim();
 
@@ -146,11 +147,9 @@ export default function DashboardLayout({ role: incomingRole = "user" }) {
   const closeMobileMenu = React.useCallback(() => setMobileMenuOpen(false), []);
 
   const brandBlock = (
-    <div className="text-center">
-      <span className="block text-xl font-bold tracking-tight text-orange-500">
-        Campus Connect
-      </span>
-      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-500">
+    <div className="flex flex-col items-center text-center">
+      <BrandLogo className="h-12" />
+      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-500">
         <FiSettings className="text-sm" />
         {role === "admin" ? "Admin" : "Student"}
       </span>

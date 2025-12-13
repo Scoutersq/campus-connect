@@ -1,0 +1,45 @@
+.dotted-glow-background {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	overflow: hidden;
+	background-color: rgba(255, 255, 255, var(--background-opacity, 1));
+	background-image:
+		linear-gradient(
+			to right,
+			var(--dot-color, rgba(17, 24, 39, 0.26)) var(--dot-radius, 1px),
+			transparent var(--dot-radius, 1px)
+		),
+		linear-gradient(
+			to bottom,
+			var(--dot-color, rgba(17, 24, 39, 0.26)) var(--dot-radius, 1px),
+			transparent var(--dot-radius, 1px)
+		);
+	background-size: var(--dot-gap, 72px) var(--dot-gap, 72px);
+	opacity: var(--dot-opacity, 1);
+	-webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.75) 55%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0) 100%);
+	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.75) 55%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0) 100%);
+}
+
+.dotted-glow-background::before {
+	content: "";
+	position: absolute;
+	inset: -25%;
+	background:
+		radial-gradient(circle at 35% 15%, var(--grid-highlight, rgba(255, 255, 255, 0.85)) 0%, transparent 55%),
+		radial-gradient(circle at 75% 0%, rgba(255, 255, 255, 0.7) 0%, transparent 60%),
+		linear-gradient(120deg, rgba(255, 255, 255, 0.32) 0%, transparent 55%);
+	mix-blend-mode: soft-light;
+	opacity: 0.35;
+}
+
+.dotted-glow-background::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 40%, transparent 100%),
+		linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.12) 75%, rgba(255, 255, 255, 0.6) 100%);
+	mix-blend-mode: normal;
+	opacity: 0.45;
+}

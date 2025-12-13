@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../utils/fetchResource";
 import { setPortalRole } from "../utils/portalRole";
+import BrandLogo from "../components/BrandLogo";
 
 export default function SignupPage() {
   const [role, setRole] = useState("user");
@@ -142,10 +143,7 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#fff5eb] to-white flex flex-col items-center justify-center px-4 py-12">
       <div className="flex flex-col items-center gap-3 mb-8 text-center">
-        <div className="flex items-center gap-2 text-3xl font-semibold text-orange-500">
-          <span role="img" aria-label="graduation cap">🎓</span>
-          <span>Campus Connect</span>
-        </div>
+        <BrandLogo className="h-14" />
         <p className="text-sm text-gray-500">Connect with your campus community</p>
       </div>
 
