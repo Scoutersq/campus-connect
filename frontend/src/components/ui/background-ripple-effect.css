@@ -4,7 +4,7 @@
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
-  --grid-color: rgba(17, 24, 39, 0.16);
+  --grid-color: rgba(17, 24, 39, 0.12);
   --grid-size: 80px;
   --pointer-x: 50%;
   --pointer-y: 35%;
@@ -24,7 +24,7 @@
   position: absolute;
   inset: -35%;
   background-repeat: no-repeat;
-  opacity: 0.35;
+  opacity: 0.28;
   transform-origin: center;
   animation: ripple-rotate var(--pulse-duration) linear infinite;
   mix-blend-mode: normal;
@@ -90,14 +90,14 @@
       transparent 1px
     );
   background-size: calc(var(--grid-size) / 2) calc(var(--grid-size) / 2);
-  opacity: 0.35;
+  opacity: 0.28;
   mix-blend-mode: normal;
   transform-origin: center;
   animation: layer-shift 24s ease-in-out infinite;
 }
 
 .background-ripple-effect__layer--alt {
-  opacity: 0.25;
+  opacity: 0.18;
   transform: rotate(3deg) scale(1.05);
   animation-direction: reverse;
 }

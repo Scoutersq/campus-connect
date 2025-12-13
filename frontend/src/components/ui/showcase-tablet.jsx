@@ -9,21 +9,22 @@ export function ShowcaseTablet({
   className = "",
 }) {
   const containerRef = useRef(null);
-  const [progress, setProgress] = useState(0);
+  const [targetProgress, setTargetProgress] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
+  const animatedProgressRef = useRef(0);
+  const animationFrameRef = useRef(0);
 
   useEffect(() => {
-    const node = containerRef.current;
-    if (!node) return;
-
     const update = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
+      const host = containerRef.current;
+      if (!host) return;
+      const rect = host.getBoundingClientRect();
       const viewport = window.innerHeight || document.documentElement.clientHeight;
       const total = rect.height + viewport;
       const raw = (viewport - rect.top) / total;
-      setProgress((prev) => {
+      setTargetProgress((prev) => {
         const next = clamp(raw);
-        return Math.abs(next - prev) > 0.003 ? next : prev;
+        return Math.abs(next - prev) > 0.002 ? next : prev;
       });
     };
 
@@ -47,13 +48,49 @@ export function ShowcaseTablet({
     };
   }, []);
 
-  const straightProgress = clamp((progress - 0.08) / 0.55);
+  useEffect(() => {
+    const animate = () => {
+      const current = animatedProgressRef.current;
+      const target = targetProgress;
+      const next = current + (target - current) * 0.12;
+
+      if (Math.abs(next - target) < 0.0005) {
+        animatedProgressRef.current = target;
+        setDisplayProgress(target);
+        animationFrameRef.current = 0;
+        return;
+      }
+
+      animatedProgressRef.current = next;
+      setDisplayProgress(next);
+      animationFrameRef.current = window.requestAnimationFrame(animate);
+    };
+
+    if (animationFrameRef.current) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    animationFrameRef.current = window.requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = 0;
+      }
+    };
+  }, [targetProgress]);
+
+  const straightProgress = clamp((displayProgress - 0.08) / 0.55);
   const eased = straightProgress < 1 ? 1 - Math.pow(1 - straightProgress, 3) : 1;
   const tiltFactor = 1 - eased;
+  const skew = -6 * tiltFactor;
 
-  const transform = `perspective(1600px) rotateX(${12 * tiltFactor}deg) rotateY(${-
-    10 * tiltFactor
-  }deg) translateY(${clamp(tiltFactor * 18, 0, 18)}px) scale(${0.9 + eased * 0.1})`;
+  const transform = `perspective(1600px) rotateX(${12 * tiltFactor}deg) rotateY(${-10 * tiltFactor}deg) translateY(${clamp(
+    tiltFactor * 18,
+    0,
+    18
+  )}px) scale(${0.9 + eased * 0.1}) skewX(${skew}deg)`;
+
   const deviceStyle = {
     transform,
     opacity: 0.75 + eased * 0.25,
@@ -63,20 +100,19 @@ export function ShowcaseTablet({
     opacity: 0.2 + eased * 0.35,
   };
 
+  const frameStyle = {
+    transform: `skewX(${skew * -1}deg)`,
+  };
+
   return (
     <section ref={containerRef} className={`showcase-tablet ${className}`}>
       <div className="showcase-tablet__device" style={deviceStyle}>
-        <div className="showcase-tablet__frame">
+        <div className="showcase-tablet__frame" style={frameStyle}>
           <div className="showcase-tablet__bezel">
             <span className="showcase-tablet__camera" aria-hidden="true" />
             <div className="showcase-tablet__screen">
               {src && (
-                <img
-                  src={src}
-                  alt={alt}
-                  className="showcase-tablet__image"
-                  loading="lazy"
-                />
+                <img src={src} alt={alt} className="showcase-tablet__image" loading="lazy" />
               )}
               <div className="showcase-tablet__glow" style={glowStyle} aria-hidden="true" />
             </div>
