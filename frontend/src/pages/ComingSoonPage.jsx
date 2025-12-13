@@ -11,14 +11,6 @@ export default function ComingSoonPage() {
         <p className="mt-6 text-base text-gray-600">
           We are crafting something special for this section. Check back shortly to explore the complete list of campus resources and opportunities.
         </p>
-        <div className="mt-10 flex justify-center">
-          <a
-            href="/dashboard"
-            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-xl"
-          >
-            Go to Dashboard
-          </a>
-        </div>
       </div>
     </div>
   );
