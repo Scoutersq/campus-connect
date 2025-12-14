@@ -2,12 +2,10 @@ import React from "react";
 import logoAsset from "../assets/campusconnect2.png";
 
 export default function BrandLogo({ className = "" }) {
-  const baseClasses = "h-12 w-auto object-contain";
-  const combinedClasses = className
-    ? `${baseClasses} ${className}`.trim()
-    : baseClasses;
+  const base = "w-auto object-contain";
+  const applied = className ? `${base} ${className}`.trim() : `${base} h-12`;
 
   return (
-    <img src={logoAsset} alt="Campus Connect logo" className={combinedClasses} loading="lazy" />
+    <img src={logoAsset} alt="Campus Connect logo" className={applied} loading="lazy" />
   );
 }

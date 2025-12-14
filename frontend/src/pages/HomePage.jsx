@@ -4,41 +4,110 @@ import BrandLogo from "../components/BrandLogo";
 import { BackgroundRippleEffect } from "../components/ui/background-ripple-effect";
 import { ShowcaseTablet } from "../components/ui/showcase-tablet";
 import { FaDiscord, FaInstagram, FaXTwitter } from "react-icons/fa6";
-import { FaChevronDown } from "react-icons/fa";
+import {
+  FaChevronDown,
+  FaBoxOpen,
+  FaCalendarCheck,
+  FaBullhorn,
+  FaBell,
+  FaRobot,
+  FaComments,
+  FaBookOpen,
+  FaHandshake,
+} from "react-icons/fa";
 import dashboardImage from "../assets/dashboard-img.png";
+import lostAndFoundImage from "../assets/lostandfound.png";
+import eventsImage from "../assets/events.png";
+import emergencyImage from "../assets/emergency.png";
+import discussionsImage from "../assets/discussions.png";
+import notesImage from "../assets/notes.png";
+
+const showcaseSlides = [
+  { src: dashboardImage, alt: "Dashboard overview" },
+  { src: lostAndFoundImage, alt: "Lost and found submissions" },
+  { src: eventsImage, alt: "Upcoming events listings" },
+  { src: emergencyImage, alt: "Emergency alerts" },
+  { src: discussionsImage, alt: "Live discussions" },
+  { src: notesImage, alt: "Notes sharing" },
+];
+
+const howItWorks = [
+  {
+    step: "Step 1",
+    title: "Sign Up & Get Verified",
+    description:
+      "Students sign up using their college details and get verified through college email, ID card, or admin approval so only real students can join.",
+  },
+  {
+    step: "Step 2",
+    title: "Connect with Your College",
+    description:
+      "After verification, students join their own college community where they can see notices, events, notes, groups, chats, and daily campus updates.",
+  },
+  {
+    step: "Step 3",
+    title: "Learn, Share & Grow Together",
+    description:
+      "Students can share notes, find lost items, exchange skills, get mentorship, connect with other colleges, and use everything related to campus life in one app.",
+  },
+];
 
 const features = [
   {
     title: "Lost and Found",
     description: "Report missing items and browse campus submissions in seconds.",
+    icon: FaBoxOpen,
+    iconBg: "bg-blue-100",
+    iconColor: "text-blue-600",
   },
   {
     title: "Events",
     description: "Discover upcoming campus happenings with RSVP tracking and reminders.",
+    icon: FaCalendarCheck,
+    iconBg: "bg-purple-100",
+    iconColor: "text-purple-600",
   },
   {
     title: "Announcements",
     description: "Stay aligned with verified updates from administrators and clubs.",
+    icon: FaBullhorn,
+    iconBg: "bg-amber-100",
+    iconColor: "text-amber-500",
   },
   {
     title: "Emergency Alerts",
     description: "Receive urgent safety notifications and broadcast quick status updates.",
+    icon: FaBell,
+    iconBg: "bg-red-100",
+    iconColor: "text-red-500",
   },
   {
     title: "AI",
     description: "Chat with the Groq-powered assistant for instant campus guidance.",
+    icon: FaRobot,
+    iconBg: "bg-emerald-100",
+    iconColor: "text-emerald-500",
   },
   {
     title: "Discussion",
     description: "Join live rooms to collaborate, brainstorm, and keep conversations flowing.",
+    icon: FaComments,
+    iconBg: "bg-sky-100",
+    iconColor: "text-sky-600",
   },
   {
     title: "Notes Sharing",
     description: "Exchange lecture notes and study guides securely with classmates.",
+    icon: FaBookOpen,
+    iconBg: "bg-teal-100",
+    iconColor: "text-teal-500",
   },
   {
     title: "Skill Exchange",
     description: "Offer mentorship or request new skills within a trusted campus network.",
+    icon: FaHandshake,
+    iconBg: "bg-rose-100",
+    iconColor: "text-rose-500",
   },
 ];
 
@@ -96,7 +165,7 @@ export default function HomePage() {
       <BackgroundRippleEffect className="-z-10" />
       {/* Header intentionally removed per request */}
 
-      <div className="absolute right-4 top-8 z-40 flex items-center gap-3 sm:right-8 sm:top-12">
+      <div className="absolute right-4 top-8 z-40 hidden items-center gap-3 sm:flex sm:right-8 sm:top-12">
         <button
           type="button"
           aria-label="Discord"
@@ -124,15 +193,15 @@ export default function HomePage() {
       </div>
 
       {/* Hero */}
-      <main className="flex flex-col items-center justify-center flex-1 px-6 pt-36 pb-16 text-center">
-        <BrandLogo className="h-40 mb-5" />
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+      <main className="flex flex-col items-center justify-center flex-1 px-4 pt-28 pb-12 text-center sm:px-6 sm:pt-36 sm:pb-16">
+        <BrandLogo className="mb-5 h-32 sm:h-40" />
+        <h1 className="text-3xl font-bold leading-snug text-gray-900 sm:text-5xl md:text-6xl md:leading-tight">
           Connecting Campus Life
         </h1>
-        <h2 className="mt-3 text-4xl sm:text-5xl md:text-6xl font-semibold text-orange-500 leading-tight">
+        <h2 className="mt-2 text-3xl font-semibold leading-snug text-orange-500 sm:mt-3 sm:text-5xl md:text-6xl md:leading-tight">
           Effortlessly
         </h2>
-        <p className="mt-6 max-w-2xl text-gray-600 text-lg sm:text-xl">
+        <p className="mt-5 max-w-xl text-base text-gray-600 sm:max-w-2xl sm:text-lg">
           From lost &amp; found to event discovery—your campus, connected.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
@@ -149,16 +218,71 @@ export default function HomePage() {
             Find Your Campus
           </a>
         </div>
+        <div className="mt-8 flex items-center gap-3 sm:hidden">
+          <button
+            type="button"
+            aria-label="Discord"
+            className="group flex h-10 w-10 items-center justify-center rounded-full border border-orange-100 bg-white text-slate-500 shadow-sm transition hover:border-orange-400 hover:bg-orange-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+          >
+            <span className="sr-only">Discord</span>
+            <FaDiscord className="h-5 w-5 transition-transform group-hover:scale-110" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label="Instagram"
+            className="group flex h-10 w-10 items-center justify-center rounded-full border border-orange-100 bg-white text-slate-500 shadow-sm transition hover:border-orange-400 hover:bg-orange-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+          >
+            <span className="sr-only">Instagram</span>
+            <FaInstagram className="h-5 w-5 transition-transform group-hover:scale-110" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label="X"
+            className="group flex h-10 w-10 items-center justify-center rounded-full border border-orange-100 bg-white text-slate-500 shadow-sm transition hover:border-orange-400 hover:bg-orange-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+          >
+            <span className="sr-only">X</span>
+            <FaXTwitter className="h-5 w-5 transition-transform group-hover:scale-110" aria-hidden="true" />
+          </button>
+        </div>
       </main>
-      <ShowcaseTablet src={dashboardImage} className="mt-6" />
+      <ShowcaseTablet slides={showcaseSlides} className="mt-6" />
 
-      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-6">
+      <section className="relative z-10 mx-auto mt-16 w-full max-w-[88rem] px-6 sm:px-16">
+        <div className="flex flex-col items-center text-center">
+          <span className="rounded-full border border-orange-500/30 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
+            How It Works
+          </span>
+          <h2 className="mt-4 text-3xl font-bold text-black sm:text-4xl">
+            Start in <span className="text-orange-500">Three Simple</span> Steps
+          </h2>
+          <p className="mt-3 max-w-3xl text-base text-black/70 sm:text-lg">
+            Verify once. Connect instantly. Experience campus life fully..
+          </p>
+        </div>
+
+        <div className="relative mt-12 w-full">
+          <div className="flex flex-col gap-12 sm:flex-row sm:items-start sm:justify-evenly sm:gap-24">
+            {howItWorks.map((item, index) => (
+              <div
+                key={item.step}
+                className="relative flex w-full flex-col items-start text-left sm:max-w-[28%]"
+              >
+                <span className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">{item.step}</span>
+                <h3 className="mt-3 text-xl font-semibold text-black sm:text-2xl">{item.title}</h3>
+                <p className="mt-4 text-base leading-relaxed text-black/70">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-4 sm:px-6">
         <div className="flex flex-col items-center text-center">
           <span className="rounded-full border border-orange-200 bg-orange-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
             Features
           </span>
           <h2 className="mt-4 text-3xl font-bold text-gray-900 sm:text-4xl">
-            Everything Your Campus Needs
+            Everything Your <span className="text-orange-500">Campus</span> Needs
           </h2>
           <p className="mt-3 max-w-2xl text-base text-gray-600 sm:text-lg">
             Explore the connected toolkit built to keep students, mentors, and admins in sync.
@@ -168,10 +292,11 @@ export default function HomePage() {
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {features.map((feature, index) => {
             const isActive = index === activeFeature;
+            const Icon = feature.icon;
             return (
               <div
                 key={feature.title}
-                className={`flex flex-col rounded-2xl border border-orange-100 bg-white/90 shadow-sm backdrop-blur transition-all duration-300 ${
+                className={`flex w-full flex-col rounded-2xl border border-orange-100 bg-white/90 shadow-sm backdrop-blur transition-all duration-300 ${
                   isActive ? "shadow-lg ring-1 ring-orange-200" : "hover:shadow-md"
                 }`}
               >
@@ -181,7 +306,17 @@ export default function HomePage() {
                   aria-expanded={isActive}
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
                 >
-                  <div>
+                  <div className="flex items-center gap-4">
+                    {Icon ? (
+                      <span
+                        className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-inner ${
+                          feature.iconBg ?? "bg-gray-100"
+                        } ${feature.iconColor ?? "text-gray-600"}`}
+                        aria-hidden="true"
+                      >
+                        <Icon className="h-6 w-6" />
+                      </span>
+                    ) : null}
                     <p className="text-lg font-semibold text-gray-900">{feature.title}</p>
                   </div>
                   <FaChevronDown
@@ -204,26 +339,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-6 pb-24">
+      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-4 pb-24 sm:px-6">
         <div className="flex flex-col items-center text-center">
           <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-600">
             FAQs
           </span>
           <h2 className="mt-4 text-3xl font-bold text-gray-900 sm:text-4xl">
-            Answers Students Ask Most
+            Answers <span className="text-orange-500">Students</span> Ask Most
           </h2>
           <p className="mt-3 max-w-2xl text-base text-gray-600 sm:text-lg">
             Transparency matters. Here’s what to know about how Campus Connect works.
           </p>
         </div>
 
-        <div className="mt-10 flex flex-wrap justify-center gap-4">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {faqs.map((faq, index) => {
             const isActive = index === activeFaq;
             return (
               <div
                 key={faq.question}
-                className={`w-fit max-w-xl rounded-2xl border border-orange-100 bg-white/90 shadow-sm transition-all duration-300 ${
+                className={`w-full rounded-2xl border border-orange-100 bg-white/90 shadow-sm transition-all duration-300 ${
                   isActive ? "shadow-lg ring-1 ring-orange-200" : "hover:shadow-md"
                 }`}
               >
