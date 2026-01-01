@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./background-ripple-effect.css";
 
 export function BackgroundRippleEffect({ className = "", pulseDuration = 16 }) {
@@ -8,10 +8,26 @@ export function BackgroundRippleEffect({ className = "", pulseDuration = 16 }) {
   const pointerFrameRef = useRef(0);
   const pointerCoordsRef = useRef({ x: 50, y: 35 });
   const viewportSizeRef = useRef({ width: 1, height: 1 });
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Check if mobile on mount
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+      setIsMobile(mobile);
+      return mobile;
+    };
+    
+    const mobile = checkMobile();
     const node = backdropRef.current;
     if (!node) return;
+
+    // Skip pointer tracking on mobile for performance
+    if (mobile) {
+      node.style.setProperty("--pointer-x", "50%");
+      node.style.setProperty("--pointer-y", "35%");
+      return;
+    }
 
     const lastApplied = { x: 50, y: 35 };
 
@@ -19,7 +35,8 @@ export function BackgroundRippleEffect({ className = "", pulseDuration = 16 }) {
       if (!node) return;
       const deltaX = Math.abs(x - lastApplied.x);
       const deltaY = Math.abs(y - lastApplied.y);
-      if (deltaX < 0.2 && deltaY < 0.2) return;
+      // Increase threshold to reduce updates
+      if (deltaX < 0.5 && deltaY < 0.5) return;
       lastApplied.x = x;
       lastApplied.y = y;
       node.style.setProperty("--pointer-x", `${x}%`);
@@ -40,7 +57,12 @@ export function BackgroundRippleEffect({ className = "", pulseDuration = 16 }) {
       pointerFrameRef.current = window.requestAnimationFrame(resolvePointer);
     };
 
+    // Throttle pointer move events
+    let lastMoveTime = 0;
     const handlePointerMove = (event) => {
+      const now = Date.now();
+      if (now - lastMoveTime < 50) return; // Throttle to 20fps max
+      lastMoveTime = now;
       pointerCoordsRef.current = { x: event.clientX, y: event.clientY };
       scheduleResolve();
     };
@@ -50,15 +72,22 @@ export function BackgroundRippleEffect({ className = "", pulseDuration = 16 }) {
       scheduleResolve();
     };
 
+    let resizeTimeout;
     const updateViewportSize = () => {
-      viewportSizeRef.current = {
-        width: window.innerWidth || document.documentElement.clientWidth || 1,
-        height: window.innerHeight || document.documentElement.clientHeight || 1,
-      };
-      scheduleResolve();
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        viewportSizeRef.current = {
+          width: window.innerWidth || document.documentElement.clientWidth || 1,
+          height: window.innerHeight || document.documentElement.clientHeight || 1,
+        };
+        scheduleResolve();
+      }, 100);
     };
 
-    updateViewportSize();
+    viewportSizeRef.current = {
+      width: window.innerWidth || document.documentElement.clientWidth || 1,
+      height: window.innerHeight || document.documentElement.clientHeight || 1,
+    };
     pointerCoordsRef.current = {
       x: viewportSizeRef.current.width * 0.5,
       y: viewportSizeRef.current.height * 0.35,
@@ -68,17 +97,16 @@ export function BackgroundRippleEffect({ className = "", pulseDuration = 16 }) {
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerleave", handlePointerLeave);
     window.addEventListener("resize", updateViewportSize);
-    window.addEventListener("orientationchange", updateViewportSize);
 
     return () => {
       if (pointerFrameRef.current) {
         window.cancelAnimationFrame(pointerFrameRef.current);
         pointerFrameRef.current = 0;
       }
+      clearTimeout(resizeTimeout);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerleave", handlePointerLeave);
       window.removeEventListener("resize", updateViewportSize);
-      window.removeEventListener("orientationchange", updateViewportSize);
     };
   }, []);
 
@@ -88,13 +116,14 @@ export function BackgroundRippleEffect({ className = "", pulseDuration = 16 }) {
     node.style.setProperty("--pulse-duration", `${pulseDuration}s`);
   }, [pulseDuration]);
 
+  // Render fewer rings on mobile
   return (
     <div ref={backdropRef} className={`background-ripple-effect ${className}`}>
       <div className="background-ripple-effect__layer" />
-      <div className="background-ripple-effect__layer background-ripple-effect__layer--alt" />
+      {!isMobile && <div className="background-ripple-effect__layer background-ripple-effect__layer--alt" />}
       <span className="background-ripple-effect__ring" />
-      <span className="background-ripple-effect__ring" />
-      <span className="background-ripple-effect__ring" />
+      {!isMobile && <span className="background-ripple-effect__ring" />}
+      {!isMobile && <span className="background-ripple-effect__ring" />}
     </div>
   );
 }

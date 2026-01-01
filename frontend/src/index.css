@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent layout shift and improve scroll */
 body {
   background: linear-gradient(to bottom, #fff, #fff5eb, #fff);
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Optimize images for faster loading */
+img {
+  content-visibility: auto;
+}
+
+/* Reduce paint on scroll */
+.backdrop-blur,
+[class*="backdrop-blur"] {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Prevent janky transitions during scroll */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
 }

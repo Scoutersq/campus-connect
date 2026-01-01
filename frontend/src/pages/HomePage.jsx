@@ -1,8 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
-import { BackgroundRippleEffect } from "../components/ui/background-ripple-effect";
-import { ShowcaseTablet } from "../components/ui/showcase-tablet";
 import { FaDiscord, FaInstagram, FaXTwitter } from "react-icons/fa6";
 import {
   FaChevronDown,
@@ -15,12 +13,22 @@ import {
   FaBookOpen,
   FaHandshake,
 } from "react-icons/fa";
-import dashboardImage from "../assets/dashboard-img.png";
-import lostAndFoundImage from "../assets/lostandfound.png";
-import eventsImage from "../assets/events.png";
-import emergencyImage from "../assets/emergency.png";
-import discussionsImage from "../assets/discussions.png";
-import notesImage from "../assets/notes.png";
+
+// Lazy load heavy components
+const BackgroundRippleEffect = lazy(() => 
+  import("../components/ui/background-ripple-effect").then(m => ({ default: m.BackgroundRippleEffect }))
+);
+const ShowcaseTablet = lazy(() => 
+  import("../components/ui/showcase-tablet").then(m => ({ default: m.ShowcaseTablet }))
+);
+
+// Lazy load images - import only when needed
+const dashboardImage = "/src/assets/dashboard-img.png";
+const lostAndFoundImage = "/src/assets/lostandfound.png";
+const eventsImage = "/src/assets/events.png";
+const emergencyImage = "/src/assets/emergency.png";
+const discussionsImage = "/src/assets/discussions.png";
+const notesImage = "/src/assets/notes.png";
 
 const showcaseSlides = [
   { src: dashboardImage, alt: "Dashboard overview" },
@@ -155,6 +163,12 @@ export default function HomePage() {
   const [showSnowfall, setShowSnowfall] = useState(false);
   const SnowfallRef = useRef(null);
   const loadingSnowfallRef = useRef(false);
+  
+  // Detect mobile for performance optimizations
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= 768 || 'ontouchstart' in window;
+  }, []);
 
   const toggleFeature = (index) => {
     setActiveFeature((current) => (current === index ? -1 : index));
@@ -196,10 +210,16 @@ export default function HomePage() {
   }, []);
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-white">
-      <BackgroundRippleEffect className="-z-10" />
+      <Suspense fallback={<div className="absolute inset-0 bg-gradient-to-b from-orange-50/30 to-white -z-10" />}>
+        <BackgroundRippleEffect className="-z-10" />
+      </Suspense>
       {/* Snowfall effect (lazy-loaded to improve initial load) */}
       {showSnowfall && SnowfallRef.current
-        ? React.createElement(SnowfallRef.current, { style: { position: 'fixed', width: '100vw', height: '100vh', zIndex: 50, pointerEvents: 'none' }, snowflakeCount: 60, color: '#f97316' })
+        ? React.createElement(SnowfallRef.current, { 
+            style: { position: 'fixed', width: '100vw', height: '100vh', zIndex: 50, pointerEvents: 'none' }, 
+            snowflakeCount: isMobile ? 25 : 60, 
+            color: '#f97316' 
+          })
         : null}
       {/* Snowflake button (moved to top-left, smaller) */}
       <button
@@ -313,9 +333,11 @@ export default function HomePage() {
           </button>
         </div>
       </main>
-      <ShowcaseTablet slides={showcaseSlides} className="mt-6" />
+      <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="animate-pulse bg-gray-200 rounded-3xl w-full max-w-4xl h-80 mx-4" /></div>}>
+        <ShowcaseTablet slides={showcaseSlides} className="mt-6" />
+      </Suspense>
 
-      <section className="relative z-10 mx-auto mt-16 w-full max-w-[88rem] px-6 sm:px-16">
+      <section className="relative z-10 mx-auto mt-16 w-full max-w-[88rem] px-6 sm:px-16" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 500px' }}>
         <div className="flex flex-col items-center text-center">
           <span className="rounded-full border border-orange-500/30 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
             How It Works
@@ -344,7 +366,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-4 sm:px-6">
+      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-4 sm:px-6" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 600px' }}>
         <div className="flex flex-col items-center text-center">
           <span className="rounded-full border border-orange-200 bg-orange-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
             Features
@@ -364,7 +386,7 @@ export default function HomePage() {
             return (
               <div
                 key={feature.title}
-                className={`flex w-full flex-col rounded-2xl border border-orange-100 bg-white/90 shadow-sm backdrop-blur transition-all duration-300 ${
+                className={`flex w-full flex-col rounded-2xl border border-orange-100 bg-white/90 shadow-sm transition-shadow duration-200 ${
                   isActive ? "shadow-lg ring-1 ring-orange-200" : "hover:shadow-md"
                 }`}
               >
@@ -388,13 +410,13 @@ export default function HomePage() {
                     <p className="text-lg font-semibold text-gray-900">{feature.title}</p>
                   </div>
                   <FaChevronDown
-                    className={`h-5 w-5 text-orange-500 transition-transform ${isActive ? "rotate-180" : ""}`}
+                    className={`h-5 w-5 text-orange-500 transition-transform duration-200 ${isActive ? "rotate-180" : ""}`}
                     aria-hidden="true"
                   />
                 </button>
                 <div
-                  className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${
-                    isActive ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  className={`overflow-hidden transition-all duration-200 ease-out ${
+                    isActive ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
                   <div className="px-5 pb-5 text-base text-gray-600">
@@ -407,7 +429,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-4 pb-24 sm:px-6">
+      <section className="relative z-10 mx-auto mt-16 w-full max-w-5xl px-4 pb-24 sm:px-6" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 600px' }}>
         <div className="flex flex-col items-center text-center">
           <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-600">
             FAQs
@@ -426,7 +448,7 @@ export default function HomePage() {
             return (
               <div
                 key={faq.question}
-                className={`w-full rounded-2xl border border-orange-100 bg-white/90 shadow-sm transition-all duration-300 ${
+                className={`w-full rounded-2xl border border-orange-100 bg-white/90 shadow-sm transition-shadow duration-200 ${
                   isActive ? "shadow-lg ring-1 ring-orange-200" : "hover:shadow-md"
                 }`}
               >
@@ -434,17 +456,17 @@ export default function HomePage() {
                   type="button"
                   onClick={() => toggleFaq(index)}
                   aria-expanded={isActive}
-                  className="flex items-center gap-4 px-6 py-4 text-left transition hover:bg-orange-50/40"
+                  className="flex items-center gap-4 px-6 py-4 text-left transition-colors duration-150 hover:bg-orange-50/40"
                 >
                   <p className="text-lg font-semibold text-gray-900">{faq.question}</p>
                   <FaChevronDown
-                    className={`h-5 w-5 text-orange-500 transition-transform ${isActive ? "rotate-180" : ""}`}
+                    className={`h-5 w-5 text-orange-500 transition-transform duration-200 ${isActive ? "rotate-180" : ""}`}
                     aria-hidden="true"
                   />
                 </button>
                 <div
-                  className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${
-                    isActive ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  className={`overflow-hidden transition-all duration-200 ease-out ${
+                    isActive ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
                   <div className="px-6 pb-5 text-base text-gray-600">
@@ -457,7 +479,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="relative z-10 mt-28 overflow-hidden bg-gradient-to-b from-black via-black to-zinc-900 text-orange-200">
+      <footer className="relative z-10 mt-28 overflow-hidden bg-gradient-to-b from-black via-black to-zinc-900 text-orange-200" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 500px' }}>
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" aria-hidden="true" />
         <div
           className="pointer-events-none absolute inset-0 opacity-35"

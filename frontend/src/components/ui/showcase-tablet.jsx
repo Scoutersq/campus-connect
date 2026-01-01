@@ -19,6 +19,7 @@ export function ShowcaseTablet({
   const glowRef = useRef(null);
   const perspectiveRef = useRef(1600);
   const autoAdvanceRef = useRef(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   const computedSlides = useMemo(() => {
     if (Array.isArray(slides) && slides.length > 0) {
@@ -38,6 +39,16 @@ export function ShowcaseTablet({
   const slideCount = computedSlides.length;
   const [activeSlide, setActiveSlide] = useState(0);
 
+  // Check if mobile on mount
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const stopAutoAdvance = useCallback(() => {
     if (autoAdvanceRef.current && typeof window !== "undefined") {
       window.clearInterval(autoAdvanceRef.current);
@@ -48,10 +59,12 @@ export function ShowcaseTablet({
   const startAutoAdvance = useCallback(() => {
     if (slideCount <= 1 || typeof window === "undefined") return;
     stopAutoAdvance();
+    // Longer interval on mobile for better performance
+    const interval = isMobile ? Math.max(6000, autoAdvanceMs + 1500) : Math.max(4000, autoAdvanceMs);
     autoAdvanceRef.current = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % slideCount);
-    }, Math.max(4000, autoAdvanceMs));
-  }, [slideCount, autoAdvanceMs, stopAutoAdvance]);
+    }, interval);
+  }, [slideCount, autoAdvanceMs, stopAutoAdvance, isMobile]);
 
   useEffect(() => {
     if (activeSlide >= slideCount) {
@@ -105,6 +118,16 @@ export function ShowcaseTablet({
   }, [applyProgressStyles]);
 
   useEffect(() => {
+    // Skip scroll animation on mobile for performance
+    if (isMobile) {
+      // Set a fixed position for mobile
+      applyProgressStyles(0.8);
+      return;
+    }
+
+    let frameId = 0;
+    let lastScrollTime = 0;
+    
     const update = () => {
       const host = containerRef.current;
       if (!host) return;
@@ -118,8 +141,12 @@ export function ShowcaseTablet({
       });
     };
 
-    let frameId = 0;
     const schedule = () => {
+      const now = Date.now();
+      // Throttle scroll updates on desktop too
+      if (now - lastScrollTime < 16) return; // ~60fps max
+      lastScrollTime = now;
+      
       if (frameId) return;
       frameId = window.requestAnimationFrame(() => {
         frameId = 0;
@@ -136,15 +163,18 @@ export function ShowcaseTablet({
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, []);
+  }, [isMobile, applyProgressStyles]);
 
   useEffect(() => {
+    // Skip smooth animation on mobile
+    if (isMobile) return;
+    
     const animate = () => {
       const current = animatedProgressRef.current;
       const target = targetProgress;
-      const next = current + (target - current) * 0.2;
+      const next = current + (target - current) * 0.15; // Slower lerp for less CPU
 
-      if (Math.abs(next - target) < 0.0005) {
+      if (Math.abs(next - target) < 0.001) {
         animatedProgressRef.current = target;
         applyProgressStyles(target);
         animationFrameRef.current = 0;
@@ -168,7 +198,7 @@ export function ShowcaseTablet({
         animationFrameRef.current = 0;
       }
     };
-  }, [targetProgress, applyProgressStyles]);
+  }, [targetProgress, applyProgressStyles, isMobile]);
 
   useEffect(() => {
     applyProgressStyles(animatedProgressRef.current);
@@ -209,29 +239,44 @@ export function ShowcaseTablet({
   );
 
   return (
-    <section ref={containerRef} className={`showcase-tablet ${className}`}>
+    <section ref={containerRef} className={`showcase-tablet ${className}${isMobile ? ' showcase-tablet--mobile' : ''}`}>
       <div ref={deviceRef} className="showcase-tablet__device">
         <div className="showcase-tablet__frame">
           <div className="showcase-tablet__bezel">
             <span className="showcase-tablet__camera" aria-hidden="true" />
             <div className="showcase-tablet__screen">
               <div className="showcase-tablet__slides">
-                <div
-                  className="showcase-tablet__slides-track"
-                  style={{ transform: `translate3d(-${activeSlide * 100}%, 0, 0)` }}
-                >
-                {computedSlides.map((slide, index) => (
-                  <img
-                    key={slide.src}
-                    src={slide.src}
-                    alt={slide.alt}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    className="showcase-tablet__slide"
-                  />
-                ))}
-                </div>
+                {isMobile ? (
+                  // Simple fade on mobile - no track transform
+                  computedSlides.map((slide, index) => (
+                    <img
+                      key={slide.src}
+                      src={slide.src}
+                      alt={slide.alt}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      decoding="async"
+                      className={`showcase-tablet__slide showcase-tablet__slide--fade${index === activeSlide ? ' showcase-tablet__slide--active' : ''}`}
+                    />
+                  ))
+                ) : (
+                  <div
+                    className="showcase-tablet__slides-track"
+                    style={{ transform: `translate3d(-${activeSlide * 100}%, 0, 0)` }}
+                  >
+                    {computedSlides.map((slide, index) => (
+                      <img
+                        key={slide.src}
+                        src={slide.src}
+                        alt={slide.alt}
+                        loading={index === 0 ? "eager" : "lazy"}
+                        decoding="async"
+                        className="showcase-tablet__slide"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-              <div ref={glowRef} className="showcase-tablet__glow" aria-hidden="true" />
+              {!isMobile && <div ref={glowRef} className="showcase-tablet__glow" aria-hidden="true" />}
               {slideCount > 1 ? (
                 <>
                   <button
