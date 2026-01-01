@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 import { BackgroundRippleEffect } from "../components/ui/background-ripple-effect";
@@ -152,6 +152,9 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFaq, setActiveFaq] = useState(0);
+  const [showSnowfall, setShowSnowfall] = useState(false);
+  const SnowfallRef = useRef(null);
+  const loadingSnowfallRef = useRef(false);
 
   const toggleFeature = (index) => {
     setActiveFeature((current) => (current === index ? -1 : index));
@@ -160,9 +163,72 @@ export default function HomePage() {
   const toggleFaq = (index) => {
     setActiveFaq((current) => (current === index ? -1 : index));
   };
+  // Inject font links asynchronously to avoid blocking initial render
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const preconnect1 = document.createElement('link');
+    preconnect1.rel = 'preconnect';
+    preconnect1.href = 'https://fonts.googleapis.com';
+    document.head.appendChild(preconnect1);
+
+    const preconnect2 = document.createElement('link');
+    preconnect2.rel = 'preconnect';
+    preconnect2.href = 'https://fonts.gstatic.com';
+    preconnect2.crossOrigin = '';
+    document.head.appendChild(preconnect2);
+
+    const sheet = document.createElement('link');
+    sheet.rel = 'stylesheet';
+    sheet.href = "https://fonts.googleapis.com/css2?family=Edu+AU+VIC+WA+NT+Pre:wght@400;500;600;700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&family=Red+Hat+Display:wght@300;700&display=swap";
+    document.head.appendChild(sheet);
+
+    // add small style block for classes
+    const style = document.createElement('style');
+    style.textContent = `.edu-hand{font-family: 'Edu AU VIC WA NT Pre', cursive;} .ubuntu-text{font-family: 'Ubuntu', sans-serif;} .redhat-bold{font-family: 'Red Hat Display', sans-serif; font-weight: 700; font-style: normal;}`;
+    document.head.appendChild(style);
+
+    return () => {
+      try { document.head.removeChild(preconnect1); } catch {};
+      try { document.head.removeChild(preconnect2); } catch {};
+      try { document.head.removeChild(sheet); } catch {};
+      try { document.head.removeChild(style); } catch {};
+    };
+  }, []);
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-white">
       <BackgroundRippleEffect className="-z-10" />
+      {/* Snowfall effect (lazy-loaded to improve initial load) */}
+      {showSnowfall && SnowfallRef.current
+        ? React.createElement(SnowfallRef.current, { style: { position: 'fixed', width: '100vw', height: '100vh', zIndex: 50, pointerEvents: 'none' }, snowflakeCount: 60 })
+        : null}
+      {/* Snowflake button (moved to top-left, smaller) */}
+      <button
+        aria-label="Let it snow!"
+        className="fixed z-50 left-3 top-3 sm:left-6 sm:top-6 bg-white bg-opacity-80 rounded-full shadow-lg border border-blue-100 hover:bg-blue-50 transition p-2 flex items-center justify-center"
+        style={{ width: 40, height: 40 }}
+        onClick={async () => {
+          // Lazy-load react-snowfall only when user requests it to reduce bundle size and CPU usage
+          if (!SnowfallRef.current && !loadingSnowfallRef.current) {
+            loadingSnowfallRef.current = true;
+            try {
+              const mod = await import('react-snowfall');
+              SnowfallRef.current = mod.default || mod;
+            } catch (err) {
+              // fail silently so app logic isn't affected
+              // eslint-disable-next-line no-console
+              console.error('Failed to load snowfall:', err);
+            } finally {
+              loadingSnowfallRef.current = false;
+              setShowSnowfall(true);
+            }
+          } else {
+            setShowSnowfall((s) => !s);
+          }
+        }}
+        title={showSnowfall ? 'Stop Snowfall' : 'Start Snowfall'}
+      >
+        <span role="img" aria-label="snowflake" style={{ fontSize: 20, color: showSnowfall ? '#60a5fa' : '#64748b', transition: 'color 0.2s' }}>❄️</span>
+      </button>
       {/* Header intentionally removed per request */}
 
       <div className="absolute right-4 top-8 z-40 hidden items-center gap-3 sm:flex sm:right-8 sm:top-12">
@@ -196,13 +262,15 @@ export default function HomePage() {
       <main className="flex flex-col items-center justify-center flex-1 px-4 pt-28 pb-12 text-center sm:px-6 sm:pt-36 sm:pb-16">
         <BrandLogo className="mb-5 h-32 sm:h-40" />
         <h1 className="text-3xl font-bold leading-snug text-gray-900 sm:text-5xl md:text-6xl md:leading-tight">
-          Connecting Campus Life
+          <span className="ubuntu-text">Connecting Campus Life</span>
         </h1>
+        {/* inject font links on mount (non-blocking) */}
+        
         <h2 className="mt-2 text-3xl font-semibold leading-snug text-orange-500 sm:mt-3 sm:text-5xl md:text-6xl md:leading-tight">
-          Effortlessly
+          <span className="edu-hand">Effortlessly with A.I</span>
         </h2>
         <p className="mt-5 max-w-xl text-base text-gray-600 sm:max-w-2xl sm:text-lg">
-          From lost &amp; found to event discovery—your campus, connected.
+          <span className="redhat-bold">From lost &amp; found to event discovery—your campus, connected.</span>
         </p>
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
           <button
