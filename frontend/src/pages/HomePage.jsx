@@ -199,12 +199,12 @@ export default function HomePage() {
       <BackgroundRippleEffect className="-z-10" />
       {/* Snowfall effect (lazy-loaded to improve initial load) */}
       {showSnowfall && SnowfallRef.current
-        ? React.createElement(SnowfallRef.current, { style: { position: 'fixed', width: '100vw', height: '100vh', zIndex: 50, pointerEvents: 'none' }, snowflakeCount: 60 })
+        ? React.createElement(SnowfallRef.current, { style: { position: 'fixed', width: '100vw', height: '100vh', zIndex: 50, pointerEvents: 'none' }, snowflakeCount: 60, color: '#f97316' })
         : null}
       {/* Snowflake button (moved to top-left, smaller) */}
       <button
         aria-label="Let it snow!"
-        className="fixed z-50 left-3 top-3 sm:left-6 sm:top-6 bg-white bg-opacity-80 rounded-full shadow-lg border border-blue-100 hover:bg-blue-50 transition p-2 flex items-center justify-center"
+        className="fixed z-50 left-3 top-3 sm:left-6 sm:top-6 bg-white bg-opacity-80 rounded-full shadow-lg border border-orange-100 hover:bg-orange-50 transition p-2 flex items-center justify-center"
         style={{ width: 40, height: 40 }}
         onClick={async () => {
           // Lazy-load react-snowfall only when user requests it to reduce bundle size and CPU usage
@@ -227,7 +227,7 @@ export default function HomePage() {
         }}
         title={showSnowfall ? 'Stop Snowfall' : 'Start Snowfall'}
       >
-        <span role="img" aria-label="snowflake" style={{ fontSize: 20, color: showSnowfall ? '#60a5fa' : '#64748b', transition: 'color 0.2s' }}>❄️</span>
+        <span role="img" aria-label="snowflake" style={{ fontSize: 20, color: showSnowfall ? '#f97316' : '#64748b', transition: 'color 0.2s' }}>❄️</span>
       </button>
       {/* Header intentionally removed per request */}
 
