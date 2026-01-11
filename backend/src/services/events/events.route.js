@@ -98,6 +98,10 @@ eventRouter.get("/", async (req, res) => {
     const token = extractTokenFromRequest(req, "user");
     const currentUserId = await resolveUserIdFromToken(token);
 
+    const now = new Date();
+    // Remove past events before responding so the portal only shows upcoming.
+    await eventModel.deleteMany({ date: { $lt: now } });
+
     const events = await eventModel.find({}).sort({ date: 1 }).lean();
 
     if (!events || events.length === 0) {
