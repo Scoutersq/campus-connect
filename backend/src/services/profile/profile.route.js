@@ -13,7 +13,19 @@ const updateProfileSchema = z
   .object({
     firstName: z.string().trim().min(3).max(20).optional(),
     lastName: z.string().trim().min(2).max(10).optional(),
-    avatarUrl: z.string().trim().url().max(2048).optional(),
+    avatarUrl: z
+      .string()
+      .trim()
+      .max(2048)
+      .refine(
+        (value) =>
+          !value ||
+          /^https?:\/\//i.test(value) ||
+          value.startsWith("/uploads/") ||
+          value.startsWith("uploads/"),
+        "Avatar URL must be a valid link or stored upload path."
+      )
+      .optional(),
     phoneNumber: z.string().trim().max(20).optional(),
     bio: z.string().trim().max(400).optional(),
     academicYear: z.string().trim().max(40).optional(),
