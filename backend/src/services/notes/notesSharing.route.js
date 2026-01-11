@@ -16,9 +16,36 @@ const uploadSchema = z.object({
   subject: z.string().trim().min(2).max(80),
 });
 
-const uploadsRoot = path.resolve(__dirname, "../../../uploads");
+const uploadRootCandidates = [
+  process.env.UPLOADS_DIR && path.resolve(process.cwd(), process.env.UPLOADS_DIR),
+  path.resolve(__dirname, "../../../uploads"),
+  path.resolve(process.cwd(), "uploads"),
+  path.resolve(process.cwd(), "backend/uploads"),
+].filter(Boolean);
+
+const ensureDir = (target) => {
+  try {
+    fs.mkdirSync(target, { recursive: true });
+    return true;
+  } catch (_err) {
+    return false;
+  }
+};
+
+const uploadsRoot =
+  uploadRootCandidates.find((dir) => ensureDir(dir)) || path.resolve(__dirname, "../../../uploads");
+
 const notesUploadDir = path.join(uploadsRoot, "notes");
-fs.mkdirSync(notesUploadDir, { recursive: true });
+ensureDir(notesUploadDir);
+
+const noteUploadRoots = [
+  ...new Set([
+    notesUploadDir,
+    ...uploadRootCandidates.map((dir) => path.join(dir, "notes")),
+    ...uploadRootCandidates,
+    uploadsRoot,
+  ]),
+];
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -189,29 +216,39 @@ const resolveNoteFilePath = (note) => {
     return null;
   }
 
+  const candidateRelatives = [];
+
   if (note.storageName) {
-    return path.join(notesUploadDir, note.storageName);
+    candidateRelatives.push(note.storageName);
   }
 
   const rawFileUrl = note.fileUrl || note.fileURL || note.file_path;
 
-  if (typeof rawFileUrl !== "string" || rawFileUrl.length === 0) {
-    return null;
+  if (typeof rawFileUrl === "string" && rawFileUrl.length > 0) {
+    const withoutProtocol = rawFileUrl.replace(/^https?:\/\/[^/]+/i, "").replace(/\\/g, "/");
+    const normalized = withoutProtocol.replace(/^\/+/, "");
+
+    if (normalized.toLowerCase().startsWith("uploads/")) {
+      const relative = stripLeadingUploads(normalized);
+      if (relative) {
+        candidateRelatives.push(relative);
+      }
+    }
   }
 
-  const withoutProtocol = rawFileUrl.replace(/^https?:\/\/[^/]+/i, "").replace(/\\/g, "/");
-  const normalized = withoutProtocol.replace(/^\/+/, "");
+  for (const relativePath of candidateRelatives) {
+    for (const base of noteUploadRoots) {
+      const candidate = path.isAbsolute(relativePath)
+        ? relativePath
+        : path.join(base, relativePath);
 
-  if (!normalized.toLowerCase().startsWith("uploads/")) {
-    return null;
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
   }
 
-  const relative = stripLeadingUploads(normalized);
-  if (!relative) {
-    return null;
-  }
-
-  return path.join(notesUploadDir, relative);
+  return null;
 };
 
 const authorizeNoteOwnerOrAdmin = async (req, res, next) => {

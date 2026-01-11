@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require("path");
+const fs = require("fs");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { userRouter } = require("./services/auth/user.route.js");
@@ -137,7 +138,24 @@ app.use(
 	})
 );
 
-app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
+// Serve uploads from any known location (root or backend folder) to avoid path drift across environments.
+const uploadDirCandidates = [
+	process.env.UPLOADS_DIR && path.resolve(process.cwd(), process.env.UPLOADS_DIR),
+	path.resolve(__dirname, "../uploads"),
+	path.resolve(__dirname, "../../uploads"),
+	path.resolve(process.cwd(), "uploads"),
+	path.resolve(process.cwd(), "backend/uploads"),
+].filter(Boolean);
+
+const uniqueUploadDirs = [...new Set(uploadDirCandidates)];
+uniqueUploadDirs.forEach((dir) => {
+	try {
+		fs.mkdirSync(dir, { recursive: true });
+		app.use("/uploads", express.static(dir));
+	} catch (err) {
+		console.warn(`Failed to register uploads directory ${dir}:`, err.message);
+	}
+});
 
 const frameAncestorOrigins = allowedOrigins.filter((origin) => /^https?:\/\//i.test(origin));
 const frameAncestorPatterns = originPatternSources.filter((pattern) => pattern.startsWith("https://*."));

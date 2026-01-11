@@ -288,24 +288,24 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
         : `${message.sender?.firstName ?? ""} ${message.sender?.lastName ?? ""}`.trim();
       const displayLabel = senderLabelRaw.length > 0 ? senderLabelRaw.replace(/\s+/g, " ") : "Participant";
 
-      const bubbleBaseClasses = "max-w-[70%] rounded-3xl px-4 py-3 text-sm leading-relaxed shadow";
+      const bubbleBaseClasses = "max-w-[90%] md:max-w-[80%] inline-block rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm whitespace-pre-wrap break-words";
       const bubbleVariantClasses = isSelf
-        ? "rounded-tl-md rounded-bl-md bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-        : "rounded-tr-md rounded-br-md bg-slate-100 text-slate-700";
+        ? "rounded-br-sm bg-gradient-to-r from-orange-500 to-orange-400 text-white"
+        : "rounded-bl-sm bg-white text-slate-800 border border-slate-100";
       const bubbleClasses = `${bubbleBaseClasses} ${bubbleVariantClasses}`;
-      const messageWrapperClasses = "flex justify-start";
+      const messageWrapperClasses = `flex ${isSelf ? "justify-end" : "justify-start"}`;
+      const metaColor = isSelf ? "text-white/70" : "text-slate-500";
 
       return (
         <div key={message.id} className={messageWrapperClasses}>
-          <div className={bubbleClasses}>
-            <p>{message.content}</p>
-            <span
-              className={`mt-2 block text-[11px] uppercase tracking-wide ${
-                isSelf ? "text-white/70" : "text-slate-500"
-              }`}
-            >
-              {displayLabel} {formatTime(message.createdAt)}
+          <div className={`flex w-full max-w-full flex-col gap-1 ${isSelf ? "items-end text-right" : "items-start"}`}>
+            <span className={`text-[11px] font-semibold uppercase tracking-wide ${isSelf ? "text-orange-500" : "text-slate-500"}`}>
+              {displayLabel}
             </span>
+            <div className={bubbleClasses}>
+              <p>{message.content}</p>
+              <span className={`mt-1 block text-[11px] ${metaColor}`}>{formatTime(message.createdAt)}</span>
+            </div>
           </div>
         </div>
       );
@@ -356,27 +356,29 @@ export function LiveDiscussionPanel({ discussion, onClose, onMembershipChange })
       <div className="flex flex-1 flex-col overflow-hidden">
         <div
           ref={listContainerRef}
-          className="flex-1 space-y-4 overflow-y-auto bg-gradient-to-b from-white via-orange-50/40 to-white px-6 py-6"
+          className="flex-1 overflow-y-auto bg-gradient-to-b from-white via-orange-50/40 to-white px-6 py-6"
           onScroll={(event) => {
             const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
             const nearBottom = scrollHeight - (scrollTop + clientHeight) < 80;
             shouldAutoScrollRef.current = nearBottom;
           }}
         >
-          {hasMore && (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={handleLoadMore}
-                disabled={loadingMessages}
-                className="rounded-full border border-orange-200 px-4 py-1 text-xs font-semibold text-orange-500 transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loadingMessages ? "Loading..." : "Load previous messages"}
-              </button>
-            </div>
-          )}
-          {renderMessages}
-          <span ref={messagesEndRef} />
+          <div className="mx-auto flex w-full max-w-4xl flex-col space-y-4">
+            {hasMore && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleLoadMore}
+                  disabled={loadingMessages}
+                  className="rounded-full border border-orange-200 px-4 py-1 text-xs font-semibold text-orange-500 transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loadingMessages ? "Loading..." : "Load previous messages"}
+                </button>
+              </div>
+            )}
+            {renderMessages}
+            <span ref={messagesEndRef} />
+          </div>
         </div>
         <footer className="border-t border-orange-100 bg-white/90 px-6 py-4">
           {isJoined ? (

@@ -10,6 +10,7 @@ import EmergencyAlertsPage from "./dashboard/EmergencyAlertsPage";
 import PlaceholderPage from "./dashboard/PlaceholderPage";
 import NotesPage from "./dashboard/NotesPage";
 import DiscussionsPage from "./dashboard/DiscussionsPage";
+import ProfilePage from "./dashboard/ProfilePage";
 import AdminOverviewPage from "./dashboard/admin/AdminOverviewPage";
 import AdminLostAndFoundPage from "./dashboard/admin/AdminLostAndFoundPage";
 import AdminEventsPage from "./dashboard/admin/AdminEventsPage";
@@ -58,7 +59,7 @@ export default function DashboardPage() {
         <Route path="emergency-alerts" element={<EmergencyAlertsPage />} />
         <Route path="discussions" element={<DiscussionsPage />} />
         <Route path="notes" element={<NotesPage />} />
-        <Route path="profile" element={<PlaceholderPage title="Profile" />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="." replace />} />
       </Route>
     </Routes>

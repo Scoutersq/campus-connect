@@ -30,6 +30,26 @@ const userSchema = new Schema({
         maxlength:10,
         trim:true
     },
+    phoneNumber: {
+        type: String,
+        trim: true,
+        maxlength: 20,
+    },
+    bio: {
+        type: String,
+        trim: true,
+        maxlength: 400,
+    },
+    academicYear: {
+        type: String,
+        trim: true,
+        maxlength: 40,
+    },
+    department: {
+        type: String,
+        trim: true,
+        maxlength: 80,
+    },
     studentId: {
         type: String,
         required: true,
