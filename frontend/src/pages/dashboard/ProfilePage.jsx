@@ -25,10 +25,17 @@ function AvatarBadge({ name = "", avatarUrl = "", size = 64 }) {
     .slice(0, 2)
     .join("") || "?";
 
-  if (avatarUrl) {
+  const resolvedAvatar = React.useMemo(() => {
+    if (!avatarUrl) return "";
+    if (/^https?:\/\//i.test(avatarUrl)) return avatarUrl;
+    const normalized = avatarUrl.startsWith("/") ? avatarUrl : `/${avatarUrl}`;
+    return buildApiUrl(normalized);
+  }, [avatarUrl]);
+
+  if (resolvedAvatar) {
     return (
       <img
-        src={avatarUrl}
+        src={resolvedAvatar}
         alt={name || "Profile avatar"}
         className="rounded-full object-cover"
         style={{ width: size, height: size }}
