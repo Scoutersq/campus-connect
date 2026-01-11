@@ -151,6 +151,8 @@ noteSharingRouter.post("/upload", userMiddleware, uploadSingleNote, async (req, 
       });
     }
 
+    const fileBuffer = fs.readFileSync(req.file.path);
+
     const note = await noteSharingModel.create({
       title: parsedBody.title,
       description: parsedBody.description,
@@ -160,6 +162,7 @@ noteSharingRouter.post("/upload", userMiddleware, uploadSingleNote, async (req, 
       fileName: req.file.originalname,
       fileType: req.file.mimetype,
       fileSize: req.file.size,
+      fileData: fileBuffer,
       uploadedBy: req.userID,
     });
 
@@ -251,6 +254,16 @@ const resolveNoteFilePath = (note) => {
   return null;
 };
 
+const streamBufferToResponse = (buffer, res, note, inline = true) => {
+  res.setHeader("Content-Type", note.fileType || "application/octet-stream");
+  const disposition = inline ? "inline" : "attachment";
+  res.setHeader(
+    "Content-Disposition",
+    `${disposition}; filename="${note.fileName || note.storageName || "note"}"`
+  );
+  return res.end(buffer);
+};
+
 const authorizeNoteOwnerOrAdmin = async (req, res, next) => {
   try {
     const token = extractTokenFromRequest(req, req.headers?.["x-portal-role"]);
@@ -323,34 +336,39 @@ noteSharingRouter.get(
 
       const filePath = resolveNoteFilePath(note);
 
-      if (!filePath || !fs.existsSync(filePath)) {
-        if (note.fileUrl) {
-          return res.redirect(note.fileUrl);
-        }
-        return res.status(404).json({
-          success: false,
-          message: "File not available for preview.",
+      if (filePath && fs.existsSync(filePath)) {
+        res.setHeader("Content-Type", note.fileType || "application/octet-stream");
+        res.setHeader(
+          "Content-Disposition",
+          `inline; filename="${note.fileName || note.storageName}`
+        );
+        const stream = fs.createReadStream(filePath);
+        stream.on("error", (streamError) => {
+          console.error("Error streaming note preview:", streamError);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: "Failed to load the note preview.",
+            });
+          } else {
+            res.destroy(streamError);
+          }
         });
+        return stream.pipe(res);
       }
 
-      res.setHeader("Content-Type", note.fileType || "application/octet-stream");
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${note.fileName || note.storageName}"`
-      );
-      const stream = fs.createReadStream(filePath);
-      stream.on("error", (streamError) => {
-        console.error("Error streaming note preview:", streamError);
-        if (!res.headersSent) {
-          res.status(500).json({
-            success: false,
-            message: "Failed to load the note preview.",
-          });
-        } else {
-          res.destroy(streamError);
-        }
+      if (note.fileData) {
+        return streamBufferToResponse(note.fileData, res, note, true);
+      }
+
+      if (note.fileUrl) {
+        return res.redirect(note.fileUrl);
+      }
+
+      return res.status(404).json({
+        success: false,
+        message: "File not available for preview.",
       });
-      return stream.pipe(res);
     } catch (error) {
       console.error("Error previewing note:", error);
       return res.status(500).json({
@@ -388,37 +406,41 @@ noteSharingRouter.get(
         }
       };
 
-      if (!filePath || !fs.existsSync(filePath)) {
+      if (filePath && fs.existsSync(filePath)) {
         await incrementDownload();
-        if (note.fileUrl) {
-          return res.redirect(note.fileUrl);
-        }
-        return res.status(404).json({
-          success: false,
-          message: "File not available for download.",
+        res.setHeader("Content-Type", note.fileType || "application/octet-stream");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${note.fileName || note.storageName}`
+        );
+        const stream = fs.createReadStream(filePath);
+        stream.on("error", (streamError) => {
+          console.error("Error streaming note download:", streamError);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: "Failed to download the note.",
+            });
+          } else {
+            res.destroy(streamError);
+          }
         });
+        return stream.pipe(res);
+      }
+
+      if (note.fileData) {
+        await incrementDownload();
+        return streamBufferToResponse(note.fileData, res, note, false);
       }
 
       await incrementDownload();
-
-      res.setHeader("Content-Type", note.fileType || "application/octet-stream");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${note.fileName || note.storageName}"`
-      );
-      const stream = fs.createReadStream(filePath);
-      stream.on("error", (streamError) => {
-        console.error("Error streaming note download:", streamError);
-        if (!res.headersSent) {
-          res.status(500).json({
-            success: false,
-            message: "Failed to download the note.",
-          });
-        } else {
-          res.destroy(streamError);
-        }
+      if (note.fileUrl) {
+        return res.redirect(note.fileUrl);
+      }
+      return res.status(404).json({
+        success: false,
+        message: "File not available for download.",
       });
-      return stream.pipe(res);
     } catch (error) {
       console.error("Error downloading note:", error);
       return res.status(500).json({

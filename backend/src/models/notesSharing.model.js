@@ -47,6 +47,9 @@ const noteSharingSchema = new mongoose.Schema(
       required: [true, "File size is required"],
       min: [1, "File size must be greater than zero"],
     },
+    fileData: {
+      type: Buffer,
+    },
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
