@@ -2,9 +2,22 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 import "./index.css";
+import faviconUrl from "./assets/favicon.png";
 import App from "./App";
 import { API_BASE_URL } from "./api";
 import { getPortalRole } from "./utils/portalRole";
+
+// Ensure favicon loads from bundled asset path (works in dev and production)
+if (typeof document !== "undefined") {
+  const existing = document.querySelector('link[rel="icon"]');
+  const link = existing || document.createElement("link");
+  link.setAttribute("rel", "icon");
+  link.setAttribute("type", "image/png");
+  link.href = faviconUrl;
+  if (!existing) {
+    document.head.appendChild(link);
+  }
+}
 
 if (typeof window !== "undefined" && typeof window.fetch === "function") {
   const originalFetch = window.fetch.bind(window);
