@@ -161,6 +161,7 @@ export default function HomePage() {
   const [activeFeature, setActiveFeature] = useState(0);
   const [activeFaq, setActiveFaq] = useState(0);
   const [showSnowfall, setShowSnowfall] = useState(false);
+  const [showRipple, setShowRipple] = useState(false);
   const SnowfallRef = useRef(null);
   const loadingSnowfallRef = useRef(false);
   
@@ -169,6 +170,23 @@ export default function HomePage() {
     if (typeof window === 'undefined') return false;
     return window.innerWidth <= 768 || 'ontouchstart' in window;
   }, []);
+
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  // Defer decorative ripple effect until after first paint/idle for snappier load
+  useEffect(() => {
+    if (isMobile || prefersReducedMotion) return;
+    const enable = () => setShowRipple(true);
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(enable, { timeout: 1200 });
+      return () => window.cancelIdleCallback?.(idleId);
+    }
+    const timer = window.setTimeout(enable, 350);
+    return () => window.clearTimeout(timer);
+  }, [isMobile, prefersReducedMotion]);
 
   const toggleFeature = (index) => {
     setActiveFeature((current) => (current === index ? -1 : index));
@@ -210,9 +228,13 @@ export default function HomePage() {
   }, []);
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-white">
-      <Suspense fallback={<div className="absolute inset-0 bg-gradient-to-b from-orange-50/30 to-white -z-10" />}>
-        <BackgroundRippleEffect className="-z-10" />
-      </Suspense>
+      {showRipple ? (
+        <Suspense fallback={<div className="absolute inset-0 bg-gradient-to-b from-orange-50/30 to-white -z-10" />}>
+          <BackgroundRippleEffect className="-z-10" />
+        </Suspense>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-50/30 to-white -z-10" aria-hidden="true" />
+      )}
       {/* Snowfall effect (lazy-loaded to improve initial load) */}
       {showSnowfall && SnowfallRef.current
         ? React.createElement(SnowfallRef.current, { 
