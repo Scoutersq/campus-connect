@@ -14,6 +14,14 @@ import {
   FaHandshake,
 } from "react-icons/fa";
 
+// Bundle-safe asset imports (Vite will handle hashing and correct public paths)
+import dashboardImage from "../assets/dashboard-img.png";
+import lostAndFoundImage from "../assets/lostandfound.png";
+import eventsImage from "../assets/events.png";
+import emergencyImage from "../assets/emergency.png";
+import discussionsImage from "../assets/discussions.png";
+import notesImage from "../assets/notes.png";
+
 // Lazy load heavy components
 const BackgroundRippleEffect = lazy(() => 
   import("../components/ui/background-ripple-effect").then(m => ({ default: m.BackgroundRippleEffect }))
@@ -21,14 +29,6 @@ const BackgroundRippleEffect = lazy(() =>
 const ShowcaseTablet = lazy(() => 
   import("../components/ui/showcase-tablet").then(m => ({ default: m.ShowcaseTablet }))
 );
-
-// Lazy load images - import only when needed
-const dashboardImage = "/src/assets/dashboard-img.png";
-const lostAndFoundImage = "/src/assets/lostandfound.png";
-const eventsImage = "/src/assets/events.png";
-const emergencyImage = "/src/assets/emergency.png";
-const discussionsImage = "/src/assets/discussions.png";
-const notesImage = "/src/assets/notes.png";
 
 const showcaseSlides = [
   { src: dashboardImage, alt: "Dashboard overview" },
