@@ -21,6 +21,7 @@ const skillsDirectoryRouter = require("./routes/skills/skillsDirectory.routes.js
 const { emergencyRouter } = require("./services/emergency/emergency.route.js");
 const cors = require('cors');
 const { ensureAdminCodes } = require("./utils/adminCodes.js");
+const { ensureStudentIds } = require("./utils/studentIds.js");
 const {
 	postsRouter,
 	commentsRouter,
@@ -36,6 +37,11 @@ dotenv.config();
 // Seed admin codes to ensure only the allowed code exists
 ensureAdminCodes().catch((err) => {
 	console.warn("Failed to ensure admin codes:", err?.message || err);
+});
+
+// Seed student IDs to ensure ST1–ST100 exist and nothing else
+ensureStudentIds().catch((err) => {
+	console.warn("Failed to ensure student IDs:", err?.message || err);
 });
 
 app.disable("x-powered-by");

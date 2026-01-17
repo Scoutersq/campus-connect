@@ -20,6 +20,8 @@ async function ensureStudentIds() {
   }
 
   await studentIdModel.bulkWrite(operations, { ordered: false });
+  // Remove any IDs outside the allowed range to keep the collection clean.
+  await studentIdModel.deleteMany({ value: { $nin: allowedStudentIds } });
 }
 
 module.exports = {
