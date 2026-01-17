@@ -20,6 +20,7 @@ const mentorshipRouter = require("./routes/skills/mentorship.routes.js");
 const skillsDirectoryRouter = require("./routes/skills/skillsDirectory.routes.js");
 const { emergencyRouter } = require("./services/emergency/emergency.route.js");
 const cors = require('cors');
+const { ensureAdminCodes } = require("./utils/adminCodes.js");
 const {
 	postsRouter,
 	commentsRouter,
@@ -31,6 +32,11 @@ const app = express();
 const dotenv = require("dotenv")
 const cookieParser = require("cookie-parser");
 dotenv.config();
+
+// Seed admin codes to ensure only the allowed code exists
+ensureAdminCodes().catch((err) => {
+	console.warn("Failed to ensure admin codes:", err?.message || err);
+});
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);

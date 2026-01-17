@@ -1,6 +1,7 @@
 const { adminCodeModel } = require("../models/adminCode.model.js");
 
-const allowedAdminCodes = Array.from({ length: 20 }, (_, index) => `ADM${index + 1}`);
+// Only allow a single admin code.
+const allowedAdminCodes = ["ADM10"];
 
 const normalizeAdminCode = (value = "") => value.trim().toUpperCase();
 
@@ -20,6 +21,8 @@ async function ensureAdminCodes() {
   }
 
   await adminCodeModel.bulkWrite(operations, { ordered: false });
+  // Remove any codes that are no longer allowed to keep the DB clean.
+  await adminCodeModel.deleteMany({ value: { $nin: allowedAdminCodes } });
 }
 
 module.exports = {

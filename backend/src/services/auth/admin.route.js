@@ -28,7 +28,7 @@ const adminCodeSchema = z
   .max(10)
   .transform((value) => normalizeAdminCode(value))
   .refine((value) => allowedAdminCodes.includes(value), {
-    message: "Please enter a valid admin code.",
+	message: "You are not an Admin",
   });
 
 const adminSignupSchema = z.object({
@@ -61,7 +61,7 @@ adminRouter.post("/signup", validateBody(adminSignupSchema), async (req, res) =>
     if (!adminCodeRecord) {
       return res.status(400).json({
         success: false,
-        message: "Admin code is not recognized.",
+        message: "You are not an Admin",
       });
     }
 
